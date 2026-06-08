@@ -511,6 +511,8 @@ abstract.docx
 cover.pdf
 facebook_post.txt
 mapboxboxivnsprompt.txt
+AUTOUPDATE_SETUP.txt
+make_abstract.py
 
 # BoxBox — old Claude config files (superseded by .claude/)
 BOXBOX_CLAUDE.md
