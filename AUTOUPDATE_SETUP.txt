@@ -1,0 +1,309 @@
+================================================================================
+  BoxBox — คู่มือตั้งค่าระบบ Auto-Update (ผู้พัฒนา)
+  อัปเดต: 8 มิ.ย. 2569  |  ระบบ v2 — Filename-based + SHA-256 verify
+================================================================================
+
+ภาพรวม (v2)
+-----------
+อัปโหลด BoxBoxSetup{version}.exe + BoxBoxSetup{version}.sha256 ขึ้น Google Drive
+folder เดียวกัน → GAS ตรวจชื่อไฟล์เอง → แจ้ง user ว่ามี update
+
+สิ่งที่ user เห็น (หลัง security update)
+  - แอปเปิด → ถ้ามี version ใหม่ → แสดงปุ่ม "📥 อัปเดตเลย" ใน changelog dropdown
+  - ต้องกดปุ่มเองเสมอ — ไม่มี silent auto-install แล้ว
+  - หลังกด: เห็น "กำลังดาวน์โหลด..." → C# ตรวจ SHA-256 → รัน installer
+  - Inno Setup ติดตั้งเงียบๆ → What's New modal แสดง release notes
+
+ขั้นตอนทั้งหมดของผู้พัฒนา:
+  1. เขียนโค้ด + อัปเดต devlog.md
+  2. รัน  python update_changelog.py
+  3. bump version (GASSync.js, WebBridge.cs, BoxBoxSetup.iss)
+  4. dotnet publish → Inno Setup → BoxBoxSetup_v1.X.Y.exe
+  5. สร้างไฟล์ .sha256 ด้วย PowerShell  ← ขั้นตอนใหม่ (จำเป็น)
+  6. อัปโหลด ทั้ง .exe และ .sha256 ขึ้น Drive folder  ← "ปุ่ม deploy"
+
+================================================================================
+  ส่วนที่ 1: ตั้งค่าครั้งแรก (One-time Setup)
+================================================================================
+
+── STEP 1: สร้าง Google Drive Folder ─────────────────────────────────────────
+
+1. เปิด Google Drive → สร้าง folder ใหม่  ชื่อ: BoxBoxReleases  (หรือชื่ออะไรก็ได้)
+2. Folder นี้ต้องอยู่ใน Google Account เดียวกับที่ deploy GAS script (gas_dev.txt)
+   (GAS ใช้ DriveApp ซึ่งเข้าถึง Drive ของ account ที่ execute script เท่านั้น)
+3. คัดลอก Folder ID จาก URL:
+     https://drive.google.com/drive/folders/ >>> FOLDER_ID_HERE <<<
+4. วาง Folder ID ใน gas_dev.txt บรรทัด:
+     const SETUP_FOLDER_ID = 'PASTE_FOLDER_ID_HERE';
+
+── STEP 2: Deploy GAS script (gas_dev.txt) ──────────────────────────────────
+
+1. เปิด script.google.com → เลือก project BoxBox Dev
+2. วางโค้ดจาก gas_dev.txt แทนที่โค้ดเดิม
+3. บันทึก → Deploy → Manage deployments
+4. เลือก deployment ที่ใช้งาน → คลิก Edit → "New version" → Deploy
+   (URL ไม่เปลี่ยน — _FEEDBACK_URL ในแอปยังใช้ได้เหมือนเดิม)
+
+── STEP 3: ทดสอบ checkVersion ──────────────────────────────────────────────
+
+วิธีที่ 1 — ผ่าน GAS Script Editor (แนะนำ):
+  1. สร้างไฟล์ BoxBoxSetup99.9.9.exe (ไฟล์ dummy ขนาดเล็กก็ได้)
+  2. สร้างไฟล์ BoxBoxSetup99.9.9.sha256 ที่มีเนื้อหาเป็น hash ของ dummy exe:
+       PowerShell: (Get-FileHash .\BoxBoxSetup99.9.9.exe -Algorithm SHA256).Hash.ToLower()
+       วาง hash นั้นลงในไฟล์ BoxBoxSetup99.9.9.sha256
+  3. อัปโหลดทั้งสองไฟล์ขึ้น Drive folder
+  4. GAS Script Editor → เลือก testCheckVersion → Run → ดู Logs:
+       ✅ sha256: abc123...  = ระบบพร้อม
+       ⚠️ ไม่พบ sha256     = ลืมอัปโหลด .sha256
+  5. ลบไฟล์ dummy ออกหลังทดสอบ
+
+================================================================================
+  ส่วนที่ 2: Release Workflow (ทำทุกครั้งที่ออก version ใหม่)
+================================================================================
+
+ตัวอย่าง: ออก v1.2.7
+
+── R1. อัปเดต devlog.md ─────────────────────────────────────────────────────
+
+  เพิ่ม session ใหม่ใน ## ✅ ทำแล้ว (สรุปสิ่งที่ทำ)
+  เพิ่มใน ## 📋 Version History:
+
+    ### v1.2.7 — DD เดือน ปีพ.ศ.
+    - รายการฟีเจอร์ใหม่
+    - bug fix
+
+── R2. Generate changelog.json ─────────────────────────────────────────────
+
+  cd D:\COACH\source\repo\BoxBox
+  python update_changelog.py
+
+  ผลลัพธ์: wwwroot/changelog.json ถูกอัปเดตอัตโนมัติจาก devlog.md
+
+── R3. Bump Version ─────────────────────────────────────────────────────────
+
+  แก้ 3 ที่:
+
+  A) wwwroot/js/GASSync.js
+       const CURRENT_VERSION = '1.2.7';
+
+  B) Bridge/WebBridge.cs
+       public string GetVersion() => "1.2.7";
+
+  C) BoxBoxSetup.iss
+       #define AppVersion "1.2.7"
+
+── R4. Build + Package ─────────────────────────────────────────────────────
+
+  dotnet publish -c Release -r win-x64 --self-contained true
+
+  เปิด BoxBoxSetup.iss ด้วย Inno Setup Compiler → Compile (Ctrl+F9)
+  ผลลัพธ์: installer\BoxBoxSetup_v1.2.7.exe
+
+  *** ชื่อไฟล์ต้องเป็นรูปแบบ BoxBoxSetup[_v]{version}.exe ***
+  *** GAS regex: /^BoxBoxSetup[_v]*([\d.]+)\.exe$/i ***
+
+── R5. สร้าง SHA-256 checksum file ─────────────────────────────────────────
+
+  รันใน PowerShell (แก้ชื่อไฟล์ให้ตรง version):
+
+    $f = 'D:\COACH\source\repo\BoxBox\installer\BoxBoxSetup_v1.2.7.exe'
+    (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() |
+      Out-File ($f -replace '\.exe$', '.sha256') -Encoding utf8NoBOM -NoNewline
+
+  ผลลัพธ์: installer\BoxBoxSetup_v1.2.7.sha256
+  เนื้อหา: hex string 64 ตัวอักษร เช่น  a3f2b1c0d9e8...
+
+  *** ห้ามมีบรรทัดว่างหรือ whitespace เกิน — ใช้ -NoNewline เสมอ ***
+
+── R6. อัปโหลดขึ้น Google Drive folder ─────────────────────────────────────
+
+  อัปโหลด ทั้ง 2 ไฟล์ ขึ้น BoxBoxReleases folder:
+    BoxBoxSetup_v1.2.7.exe       ← installer
+    BoxBoxSetup_v1.2.7.sha256    ← checksum (ขาดไฟล์นี้ = update ล้มเหลว)
+
+  (ไม่ต้อง Share — GAS เข้าถึงผ่าน DriveApp โดยตรง)
+
+  *** อัปโหลดครบทั้งสองไฟล์ = deploy เสร็จ ***
+
+── R7. (Optional) ลบ exe + sha256 เก่าออกจาก folder ──────────────────────
+
+  สามารถเก็บทุก version หรือลบเก่าออกก็ได้
+  GAS เลือก version สูงสุดเสมอ
+  ถ้าลบ .exe ต้องลบ .sha256 คู่กันด้วย
+
+================================================================================
+  ส่วนที่ 3: วิธีทำงาน (ภายใน)
+================================================================================
+
+ฝั่ง GAS (gas_dev.txt)
+------------------------
+  action: 'checkVersion'  → _checkVersion(clientVersion)
+    1. DriveApp.getFolderById(SETUP_FOLDER_ID).getFiles()
+    2. รวบรวมไฟล์ทั้งหมดใน fileMap (name → file)
+    3. filter .exe: /^BoxBoxSetup[_v]*([\d.]+)\.exe$/i → หา version สูงสุด
+    4. อ่าน sha256 จาก BoxBoxSetup_v{version}.sha256 ใน folder เดียวกัน
+       fallback: อ่านจาก Drive file description ถ้าไม่มี .sha256
+    5. ถ้าใหม่กว่า clientVersion → return:
+         {
+           version:      "1.2.7",
+           updateType:   "installer",
+           downloadUrl:  "https://drive.google.com/uc?export=download&id=FILE_ID&confirm=t",
+           sha256:       "a3f2b1c0d9e8...",   ← hex 64 ตัว
+           message:      "มีเวอร์ชันใหม่ 1.2.7",
+           releaseNotes: [],
+           releasedAt:   ""
+         }
+    6. ถ้าไม่มีอัปเดต → return null
+
+ฝั่ง JS (GASSync.js + App.js)
+-------------------------------
+  App startup → checkStartupUpdate()
+    1. gasCheckVersionViaWebhook() → POST {action:'checkVersion', version:CURRENT_VERSION}
+    2. ถ้า info.downloadUrl มีค่า → setCheckState('found') → แสดงปุ่ม "📥 อัปเดตเลย"
+    3. ผู้ใช้กดปุ่ม → handleApplyUpdate()
+       → bridge.StartUpdate(info.downloadUrl, 'installer', info.sha256)
+
+ฝั่ง C# (WebBridge.cs)
+-----------------------
+  StartUpdate(url, 'installer', expectedSha256)
+    1. ValidateUpdateRequest: ตรวจ HTTPS + allowed host + SHA-256 format
+       allowed hosts: drive.google.com, docs.google.com, github.com,
+                      raw.githubusercontent.com, objects.githubusercontent.com
+    2. ดาวน์โหลด .exe → memory bytes
+    3. คำนวณ SHA-256 ของ bytes → เปรียบเทียบกับ expectedSha256
+       ถ้าไม่ตรง → throw "Update SHA-256 mismatch." (ไม่เขียนไฟล์เลย)
+    4. เขียนไฟล์ → %TEMP%\BoxBoxSetup_update.exe
+    5. Process.Start(exe, "/SILENT /NORESTART /CLOSEAPPLICATIONS")
+    6. Application.Exit()  ← แอปปิดทันที
+    Inno Setup รัน silent install → เปิดแอปใหม่
+
+================================================================================
+  ส่วนที่ 4: ประวัติ Version / What's New Modal
+================================================================================
+
+changelog.json (wwwroot/changelog.json)
+---------------------------------------
+  - Generate โดย: python update_changelog.py
+  - ที่มา: ## 📋 Version History section ใน devlog.md
+  - App.js โหลดผ่าน: fetch('/changelog.json') ทุกครั้งที่เปิด
+  - แสดงผลใน: ปุ่ม 📋 dropdown (มุมขวาบน)
+
+What's New Modal
+----------------
+  - แสดงหลัง update สำเร็จ (reload ครั้งแรกหลัง install)
+  - ข้อมูลจาก localStorage 'wds_pendingWhatsNew' (เก็บก่อน exit)
+  - ถ้าต้องการ release notes → GAS คืน releaseNotes: ['...']
+    ปัจจุบัน GAS คืน releaseNotes: [] (ว่าง)
+
+================================================================================
+  ส่วนที่ 5: Troubleshooting
+================================================================================
+
+ปัญหา: update ล้มเหลว "Update SHA-256 is required."
+  ✓ GAS ไม่เจอไฟล์ .sha256 ใน Drive folder
+  ✓ ตรวจ GAS Logs: รัน testCheckVersion → ดูว่ามี "sha256: ..." ใน log ไหม
+  ✓ ตรวจชื่อไฟล์: BoxBoxSetup_v1.2.7.sha256 ต้องตรงกับ BoxBoxSetup_v1.2.7.exe ทุกตัว
+  ✓ ตรวจเนื้อหา .sha256: ต้องเป็น hex 64 ตัว ไม่มีบรรทัดว่าง ไม่มี BOM
+
+ปัญหา: update ล้มเหลว "Update SHA-256 mismatch."
+  ✓ ไฟล์ .exe ที่ upload กับ .sha256 ไม่ตรงกัน
+  ✓ สาเหตุบ่อย: สร้าง hash จาก exe เก่า แล้วอัปโหลด exe ใหม่
+  ✓ แก้: รัน PowerShell ขั้นตอน R5 ใหม่ → upload .sha256 ใหม่
+
+ปัญหา: update ล้มเหลว "Update host is not allowed."
+  ✓ downloadUrl ที่ GAS คืนมาต้องเป็น drive.google.com หรือ github.com เท่านั้น
+  ✓ ตรวจ URL ใน GAS log ว่าใช้ฟอร์แมตถูกต้อง
+
+ปัญหา: แอปไม่แสดงปุ่ม update ทั้งที่อัปโหลด exe แล้ว
+  ✓ ตรวจ SETUP_FOLDER_ID ใน gas_dev.txt ว่าถูกต้อง
+  ✓ Folder ต้องอยู่ใน Drive ของ account เดียวกับ GAS
+  ✓ Redeploy GAS (New version) หลังแก้ gas_dev.txt
+  ✓ ชื่อไฟล์ต้องตรง regex: BoxBoxSetup_v1.2.7.exe หรือ BoxBoxSetup1.2.7.exe
+
+ปัญหา: GAS ตอบ null ตลอด
+  ✓ GAS Script Editor → รัน testCheckVersion → ดู Logs
+  ✓ error "Cannot read properties of null" = SETUP_FOLDER_ID ผิด
+  ✓ error "Access denied" = Folder ไม่ใช่ของ account เดียวกัน
+
+ปัญหา: download สำเร็จแต่ install fail
+  ✓ exe อาจ corrupt (Google Drive ไฟล์ใหญ่อาจส่ง HTML virus-scan page แทน exe จริง)
+  ✓ แก้: URL ต้องมี &confirm=t ต่อท้าย (GAS สร้างให้อัตโนมัติแล้ว)
+  ✓ หรือใช้ rclone ในอนาคตถ้าไฟล์ใหญ่กว่า 100 MB
+
+ปัญหา: python update_changelog.py ไม่เจอ section
+  ✓ section header ต้องขึ้นต้นด้วย ##  และมีคำว่า "Version History"
+  ✓ version entry ต้องรูปแบบ:  ### v1.2.7 — วันที่
+  ✓ bullet ต้องขึ้นต้นด้วย -  (ห้ามใช้ - [ ] จะถูก skip)
+
+================================================================================
+  Checklist: ตั้งค่าครั้งแรก
+================================================================================
+
+[ ] สร้าง Google Drive folder "BoxBoxReleases"
+[ ] คัดลอก Folder ID → วางใน gas_dev.txt (SETUP_FOLDER_ID)
+[ ] Deploy gas_dev.txt เวอร์ชันใหม่
+[ ] ทดสอบด้วย dummy exe + sha256 → ลบออกหลังทดสอบ
+
+================================================================================
+  Checklist: Release แต่ละเวอร์ชัน
+================================================================================
+
+[ ] อัปเดต devlog.md  (session + Version History)
+[ ] รัน python update_changelog.py
+[ ] bump CURRENT_VERSION ใน GASSync.js
+[ ] bump GetVersion() ใน WebBridge.cs
+[ ] bump version ใน BoxBoxSetup.iss
+[ ] dotnet publish → Inno Setup Compile → BoxBoxSetup_v{version}.exe
+[ ] สร้าง BoxBoxSetup_v{version}.sha256 ด้วย PowerShell (ขั้นตอน R5)
+[ ] อัปโหลด .exe + .sha256 ขึ้น Google Drive folder (ต้องครบทั้งคู่)
+
+================================================================================
+  ข้อมูลอ้างอิง
+================================================================================
+
+ไฟล์ที่เกี่ยวข้อง
+-------------------
+  gas_dev.txt              GAS script (SETUP_FOLDER_ID + _checkVersion + sha256)
+  wwwroot/js/GASSync.js    CURRENT_VERSION, gasCheckVersionViaWebhook()
+  wwwroot/js/App.js        handleApplyUpdate(), changelog state, What's New modal
+  Bridge/WebBridge.cs      StartUpdate() — validate + download + verify sha256
+  BoxBoxSetup.iss          Inno Setup installer script
+  devlog.md                source of truth สำหรับ version history
+  update_changelog.py      parse devlog.md → wwwroot/changelog.json
+  wwwroot/changelog.json   version history ที่แอปโหลด (generated)
+
+GAS Response format (checkVersion)
+------------------------------------
+{
+  "ok": true,
+  "data": {
+    "version":      "1.2.7",
+    "updateType":   "installer",
+    "downloadUrl":  "https://drive.google.com/uc?export=download&id=FILE_ID&confirm=t",
+    "sha256":       "a3f2b1c0d9e8...",   // hex lowercase 64 ตัว — บังคับ
+    "message":      "มีเวอร์ชันใหม่ 1.2.7",
+    "releaseNotes": [],
+    "releasedAt":   ""
+  }
+}
+ถ้าไม่มีอัปเดต: { "ok": true, "data": null }
+
+updateType ที่รองรับ (WebBridge.StartUpdate)
+---------------------------------------------
+  "installer" → download .exe → verify SHA-256 → รัน /SILENT /NORESTART → Application.Exit()
+  "wwwroot"   → download .zip → verify SHA-256 → แตกไฟล์ทับ wwwroot/ (กัน path traversal)
+  "full"      → disabled; ใช้ signed installer แทน
+
+Format URL Google Drive direct download
+-----------------------------------------
+  https://drive.google.com/uc?export=download&id={FILE_ID}&confirm=t
+  {FILE_ID} = ส่วนที่อยู่ระหว่าง /d/ และ /view ใน share link
+  GAS สร้าง URL นี้อัตโนมัติจาก file.getId()
+
+PowerShell — สร้าง .sha256 ไฟล์
+----------------------------------
+  $f = 'D:\COACH\source\repo\BoxBox\installer\BoxBoxSetup_v1.2.7.exe'
+  (Get-FileHash $f -Algorithm SHA256).Hash.ToLower() |
+    Out-File ($f -replace '\.exe$', '.sha256') -Encoding utf8NoBOM -NoNewline
+
+================================================================================

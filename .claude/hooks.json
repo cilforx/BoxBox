@@ -1,0 +1,36 @@
+﻿{
+  "PostToolUse": [
+    {
+      "description": "After C# edit, check for COM visibility",
+      "matcher": "tool == \"bash\" && command matches \"Bridge/WebBridge\"",
+      "hooks": [
+        {
+          "type": "notification",
+          "message": "[BoxBox] Verify: Bridge methods decorated with [ComVisible(true)]?"
+        }
+      ]
+    },
+    {
+      "description": "After HTML edit, validate brace balance",
+      "matcher": "tool == \"bash\" && command matches \"BoxBox\\\\.html\"",
+      "hooks": [
+        {
+          "type": "notification",
+          "message": "[BoxBox] Check: IIFE patterns in JSX? Use .map() instead of {(()=>{})()}"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "description": "Check for IIFE in HTML",
+      "matcher": "*",
+      "hooks": [
+        {
+          "type": "notification",
+          "message": "[BoxBox] Reminder: No IIFE in JSX, localStorage keys match schema, WebView2 calls async"
+        }
+      ]
+    }
+  ]
+}

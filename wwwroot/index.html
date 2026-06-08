@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>BoxBox</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link rel="stylesheet" href="style.css"/>
+<script>(function(){var z=localStorage.getItem('wds_zoom');if(z)document.body.style.zoom=z;})();</script>
+<style>
+#bb-loading{position:fixed;inset:0;background:linear-gradient(160deg,#064E3B 0%,#065F46 50%,#059669 100%);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;
+  transition:opacity .35s ease;}
+#bb-loading.hide{opacity:0;pointer-events:none;}
+#bb-loading .logo{font-size:28px;font-weight:800;color:#fff;letter-spacing:1px;margin-bottom:4px;font-family:Segoe UI,sans-serif;}
+#bb-loading .sub{font-size:13px;color:#A7F3D0;margin-bottom:36px;font-family:Segoe UI,sans-serif;}
+#bb-loading svg .track{stroke:#065F46;}
+#bb-loading svg .arc{stroke:#34D399;stroke-linecap:round;
+  stroke-dasharray:120 282;transform-origin:50% 50%;
+  animation:bb-spin 1s cubic-bezier(.4,0,.2,1) infinite;}
+@keyframes bb-spin{from{transform:rotate(-90deg);}to{transform:rotate(270deg);}}
+#bb-loading .hint{font-size:12px;color:#6EE7B7;margin-top:28px;font-family:Segoe UI,sans-serif;}
+</style>
+</head>
+<body>
+<div id="bb-loading">
+  <div class="logo">📦 BoxBox</div>
+  <div class="sub">Ward Emergency Drug Box</div>
+  <svg width="90" height="90" viewBox="0 0 90 90">
+    <circle class="track" cx="45" cy="45" r="38" fill="none" stroke-width="6"/>
+    <circle class="arc"   cx="45" cy="45" r="38" fill="none" stroke-width="6"/>
+  </svg>
+  <div class="hint">กำลังโหลด…</div>
+</div>
+<div id="root"></div>
+<script src="js/utils.js"></script>
+<script src="js/seed.js"></script>
+<script src="js/drugmatcher.js"></script>
+<script src="js/qrCodeLib.js"></script>
+<script src="js/PrintTemplates.js"></script>
+<script type="text/babel" src="js/components.js"></script>
+<script type="text/babel" src="js/FillModal.js"></script>
+<script type="text/babel" src="js/DashboardTab.js"></script>
+<script type="text/babel" src="js/SettingsTab.js"></script>
+<script src="js/BoxBoxEditor.js"></script>
+<script type="text/babel" src="js/TemplateDesigner.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script type="text/babel" src="js/ReportTab.js"></script>
+<script src="js/hospitals.js"></script>
+<script src="js/GASSync.js"></script>
+<script src="js/ExpiryChecker.js"></script>
+<script src="js/ImportModule.js"></script>
+<script type="text/babel" src="js/ImportSection.js"></script>
+<script type="text/babel" src="js/RegisterModal.js"></script>
+<script type="text/babel" src="js/NotificationTab.js"></script>
+<script type="text/babel" src="js/App.js"></script>
+</body>
+</html>
