@@ -1528,7 +1528,8 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "    else { allDrugs.push({name:d.name,lotNo:d.lotNo||'',expiry:d.expiry||'',qty:d.qty||0}); }\n";
     sc += "  });\n";
     sc += "  var expDays = (type.expireDays > 0 ? type.expireDays : null) || settings.boxExpireDays || 90;\n";
-    sc += "  var boxExpDate = lastFill.filledAt ? new Date(new Date(lastFill.filledAt).getTime() + expDays * 86400000).toISOString().slice(0,10) : (lastFill.boxExpDate || '');\n";
+    sc += "  var _srcFilled = lastFill.filledAt || filledAt;\n";
+    sc += "  var boxExpDate = _srcFilled ? new Date(new Date(_srcFilled).getTime() + expDays * 86400000).toISOString().slice(0,10) : (lastFill.boxExpDate || '');\n";
     sc += "  var _fmtD = function(iso) { if (!iso) return '\\u2014'; var p = String(iso).slice(0,10).split('-'); if (p.length < 3) return iso; var y = parseInt(p[0]) + (settings.displayYear === 'ce' ? 0 : 543); return p[2]+'-'+p[1]+'-'+y; };\n";
     sc += "  var drugRows = '';\n";
     sc += "  allDrugs.forEach(function(d, i) {\n";
@@ -1596,7 +1597,7 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "    '<div class=\"g2\">' +\n";
     sc += "    '<div><div class=\"gl\">ประเภท</div><div class=\"gv\">' + (type.name||'\\u2014') + '</div></div>' +\n";
     sc += "    '<div><div class=\"gl\">ตึก/Ward</div><div class=\"gv\">' + (ward.name||'\\u2014') + '</div></div>' +\n";
-    sc += "    '<div><div class=\"gl\">บรรจุเมื่อ</div><div class=\"gv\">' + _fmtD(lastFill.filledAt) + '</div></div>' +\n";
+    sc += "    '<div><div class=\"gl\">บรรจุเมื่อ</div><div class=\"gv\">' + _fmtD(lastFill.filledAt || filledAt) + '</div></div>' +\n";
     sc += "    '<div><div class=\"gl\">หมดอายุกล่อง</div><div class=\"gv ' + exCls + '\">' + _fmtD(boxExpDate) + '</div></div>' +\n";
     sc += "    '<div><div class=\"gl\">ผู้เตรียมยา</div><div class=\"gv\">' + (lastFill.filledBy||'\\u2014') + '</div></div>' +\n";
     sc += "    '<div><div class=\"gl\">เภสัชกร</div><div class=\"gv\">' + (lastFill.checkedBy||'\\u2014') + '</div></div>' +\n";

@@ -1,6 +1,6 @@
 // GASSync.js — Google Apps Script sync helper (plain JS, no JSX)
 
-const CURRENT_VERSION = '1.3.3';
+const CURRENT_VERSION = '1.3.4';
 const UPDATE_TYPE_WWWROOT = 'wwwroot';
 const UPDATE_TYPE_FULL    = 'full';
 // _VERSION_URL (v1 legacy) — ไม่ใช้แล้ว, ใช้ GAS webhook (v2) แทน
