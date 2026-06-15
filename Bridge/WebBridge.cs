@@ -205,7 +205,7 @@ namespace BoxBox
                 MessageBox.Show(_owner, message, "BoxBox",
                     MessageBoxButtons.OK, MessageBoxIcon.Information));
 
-        public string GetVersion() => "1.3.2"; // sync กับ CURRENT_VERSION ใน GASSync.js
+        public string GetVersion() => "1.3.3"; // sync กับ CURRENT_VERSION ใน GASSync.js
 
         // ── Read text file from app directory ──────────────────────────────────
         public string ReadTextFile(string filename)

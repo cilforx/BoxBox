@@ -51,6 +51,7 @@ function App() {
   const [syncError,       setSyncError]       = useState('');
   const [isOnline,        setIsOnline]        = useState(navigator.onLine);
   const [storageMB,       setStorageMB]       = useState(0);
+  const [storageDismissed, setStorageDismissed] = useState(false);
   const [fillBox,         setFillBox]         = useState(null);
   const [notifyAlerts,    setNotifyAlerts]    = useState([]);
   const [historyOpen,     setHistoryOpen]     = useState(false);
@@ -123,6 +124,14 @@ function App() {
     gasArchiveIfNeeded();
     setStorageMB(getLocalStorageSizeMB());
   }, []);
+
+  // Auto-hide storage warning banner หลังแสดง 1 นาที
+  useEffect(() => {
+    if (storageMB >= 3 && !storageDismissed) {
+      const t = setTimeout(() => setStorageDismissed(true), 60000);
+      return () => clearTimeout(t);
+    }
+  }, [storageMB, storageDismissed]);
 
   // Pull-merge-push on startup: merge local + remote so both sides converge
   useEffect(() => {
@@ -202,28 +211,33 @@ function App() {
   };
   const handlePushNow = handleTestSync;
 
+  const _computeAlerts = () => boxes.map(b => {
+    if (b.deletedAt || b.status === 'retired') return null;
+    const bType = boxTypes.find(t => t.id === b.typeId);
+    const expDays = getBoxExpDays(bType, settings);
+    const fill = [...fills]
+      .filter(f => f.boxId === b.boxId)
+      .sort((a, c) => new Date(c.filledAt) - new Date(a.filledAt))[0];
+    if (!fill) return null;
+    const boxDaysLeft = Math.round(
+      (new Date(fill.filledAt).getTime() + expDays * 864e5 - Date.now()) / 864e5
+    );
+    const drugDays = (fill.drugs || []).map(d => daysLeft(d.expiry)).filter(d => d !== null);
+    const minDays  = drugDays.length ? Math.min(...drugDays) : null;
+    const boxLv    = alertLv(boxDaysLeft, settings);
+    const drugLv   = alertLv(minDays, settings);
+    if ((boxLv && boxLv !== 'ok') || (drugLv && drugLv !== 'ok'))
+      return { box: b, fill, boxDaysLeft, minDays, boxLv, drugLv };
+    return null;
+  }).filter(Boolean);
+
   useEffect(() => {
-    const alerts = boxes.map(b => {
-      if (b.deletedAt) return null;
-      const bType = boxTypes.find(t => t.id === b.typeId);
-      const expDays = getBoxExpDays(bType, settings);
-      const fill = [...fills]
-        .filter(f => f.boxId === b.boxId)
-        .sort((a, c) => new Date(c.filledAt) - new Date(a.filledAt))[0];
-      if (!fill) return null;
-      const boxDaysLeft = Math.round(
-        (new Date(fill.filledAt).getTime() + expDays * 864e5 - Date.now()) / 864e5
-      );
-      const drugDays = (fill.drugs || []).map(d => daysLeft(d.expiry)).filter(d => d !== null);
-      const minDays  = drugDays.length ? Math.min(...drugDays) : null;
-      const boxLv    = alertLv(boxDaysLeft, settings);
-      const drugLv   = alertLv(minDays, settings);
-      if ((boxLv && boxLv !== 'ok') || (drugLv && drugLv !== 'ok'))
-        return { box: b, fill, boxDaysLeft, minDays, boxLv, drugLv };
-      return null;
-    }).filter(Boolean);
+    setNotifyAlerts(_computeAlerts());
+  }, [boxes, fills, boxTypes, settings]);
+
+  useEffect(() => {
+    const alerts = _computeAlerts();
     if (alerts.length > 0) {
-      setNotifyAlerts(alerts);
       setNotifyLog(p => [...p, {
         id: uid(),
         at: new Date().toISOString(),
@@ -538,11 +552,16 @@ function App() {
           📵 ไม่มีการเชื่อมต่ออินเตอร์เน็ต — ข้อมูลจะ sync เมื่อเชื่อมต่อได้อีกครั้ง
         </div>
       )}
-      {storageMB >= 3 && (
-        <div style={{position:'fixed',top:0,left:0,right:0,zIndex:499,
+      {storageMB >= 3 && !storageDismissed && (
+        <div style={{display:'flex',alignItems:'center',gap:8,
           background:'#FFF7ED',borderBottom:'1px solid #F97316',
-          padding:'6px 16px',textAlign:'center',fontSize:12,color:'#9A3412',fontWeight:500}}>
-          ⚠️ พื้นที่จัดเก็บข้อมูลในเครื่องใช้ไป {storageMB.toFixed(1)} MB จาก ~5 MB — แนะนำให้ Export ข้อมูลเก่าแล้ว Backup ก่อน
+          padding:'6px 16px',fontSize:12,color:'#9A3412',fontWeight:500}}>
+          <span style={{flex:1,textAlign:'center'}}>
+            ⚠️ พื้นที่จัดเก็บข้อมูลในเครื่องใช้ไป {storageMB.toFixed(1)} MB จาก ~5 MB — แนะนำให้ Export ข้อมูลเก่าแล้ว Backup ก่อน
+          </span>
+          <button onClick={() => setStorageDismissed(true)}
+            style={{border:'none',background:'transparent',color:'#9A3412',
+              cursor:'pointer',fontSize:16,lineHeight:1,padding:'0 4px'}}>×</button>
         </div>
       )}
       {!registered && (
