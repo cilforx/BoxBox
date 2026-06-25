@@ -214,7 +214,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
     const boxExpDate = new Date(fillDate.getTime() + expDays*864e5);
     const sw = settings?.stickerW || 5;
     const sh = settings?.stickerH || 3;
-    if (printCfg?.silentEnabled && printCfg?.stickerPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.sticker) && printCfg?.silentEnabled && printCfg?.stickerPrinter) {
       try {
         const sd = {boxId:box.boxId,boxType:type?.name||'',fillDate:fmtDate(fillDate,settings?.printYear),
           boxExpDate:fmtDate(boxExpDate,settings?.printYear),filledBy,checkedBy,widthCm:sw,heightCm:sh};
@@ -245,7 +245,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
       fillId: savedFillId || '',
       gasUrl: _gasUrl,
     };
-    if (printCfg?.silentEnabled && printCfg?.coverPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.cover) && printCfg?.silentEnabled && printCfg?.coverPrinter) {
       try {
         const b = await window.chrome.webview.hostObjects.bridge;
         await b.SilentPrintCover(JSON.stringify(coverData), printCfg.coverPrinter);
@@ -261,7 +261,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
     const expDays   = getBoxExpDays(type, settings);
     const fillDate  = new Date();
     const boxExpDate= new Date(fillDate.getTime()+expDays*864e5);
-    if (printCfg?.silentEnabled && printCfg?.drugListPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.drugList) && printCfg?.silentEnabled && printCfg?.drugListPrinter) {
       try {
         const labelData = {
           boxId:box.boxId, boxType:type?.name||'', ward:fromWard?.name||'',

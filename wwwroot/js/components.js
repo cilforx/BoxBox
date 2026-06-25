@@ -204,7 +204,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
       filledAt: fill.filledAt || fillDate.toISOString(),
       gasUrl: _gasUrl,
     };
-    if (printCfg?.silentEnabled && printCfg?.coverPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.cover) && printCfg?.silentEnabled && printCfg?.coverPrinter) {
       try {
         const b = await window.chrome.webview.hostObjects.bridge;
         await b.SilentPrintCover(JSON.stringify(coverData), printCfg.coverPrinter);
@@ -234,7 +234,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
       dispBoxId: '',
       drugs: fill.drugs || [],
     };
-    if (printCfg?.silentEnabled && printCfg?.drugListPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.drugList) && printCfg?.silentEnabled && printCfg?.drugListPrinter) {
       try {
         const b = await window.chrome.webview.hostObjects.bridge;
         await b.SilentPrintDrugList(JSON.stringify(labelData), printCfg.drugListPrinter);
@@ -261,7 +261,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
       widthCm: settings?.stickerW || 5,
       heightCm: settings?.stickerH || 3,
     };
-    if (printCfg?.silentEnabled && printCfg?.stickerPrinter) {
+    if (!hasCanvasPrintTemplate(printCfg?.sticker) && printCfg?.silentEnabled && printCfg?.stickerPrinter) {
       try {
         const b = await window.chrome.webview.hostObjects.bridge;
         await b.SilentPrintSticker(JSON.stringify(sd), printCfg.stickerPrinter);

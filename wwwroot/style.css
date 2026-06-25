@@ -364,3 +364,72 @@ tr:last-child td { border-bottom: none }
 .pv-chip.lv-ok      { border-left-color: #22C55E; background: #F0FDF4; }
 .pv-chip-id   { font-family: monospace; font-size: 12px; font-weight: 700; color: #0F172A; }
 .pv-chip-date { font-size: 10px; color: #64748B; margin-top: 1px; }
+
+.settings-shell {
+  display: flex;
+  gap: 0;
+  height: calc(100vh - 96px);
+  min-height: 520px;
+  overflow: hidden;
+}
+.settings-sidebar {
+  width: 168px;
+  flex-shrink: 0;
+  border-right: 1px solid #E2E8F0;
+  padding-right: 8px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  padding-left: 24px;
+  padding-bottom: 40px;
+  overflow: auto;
+  overscroll-behavior: contain;
+}
+.template-designer {
+  display: grid;
+  grid-template-columns: minmax(240px, 272px) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+.template-controls,
+.template-preview {
+  min-width: 0;
+}
+
+@media (max-width: 960px) {
+  .settings-shell {
+    flex-direction: column;
+    height: auto;
+    min-height: 0;
+    overflow: visible;
+  }
+  .settings-sidebar {
+    width: 100%;
+    border-right: none;
+    border-bottom: 1px solid #E2E8F0;
+    padding: 0 0 8px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+  .settings-sidebar > div {
+    display: none;
+  }
+  .settings-sidebar .snav2 {
+    width: auto;
+    flex: 0 0 auto;
+    padding: 0 10px;
+  }
+  .settings-content {
+    padding-left: 0;
+    overflow: visible;
+  }
+  .template-designer {
+    grid-template-columns: 1fr;
+  }
+}

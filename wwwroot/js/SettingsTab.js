@@ -46,9 +46,9 @@ function SettingsTab(props) {
     ['dbconn',     '🔗', 'ฐานข้อมูล'],
   ];
   return (
-    <div style={{display:'flex', gap:0, minHeight:520}}>
+    <div className="settings-shell">
       {/* sidebar */}
-      <div style={{width:168, flexShrink:0, borderRight:'1px solid #E2E8F0', paddingRight:8}}>
+      <div className="settings-sidebar">
         {SECS.map(([v, icon, l], i) => {
           // separator ก่อนกลุ่มใหม่
           var divider = (v === 'boxes' || v === 'alert' || v === 'import')
@@ -66,7 +66,7 @@ function SettingsTab(props) {
         })}
       </div>
       {/* content */}
-      <div style={{flex:1, paddingLeft:24, minWidth:0, paddingBottom:40}}>
+      <div className="settings-content">
         {sec==='boxes'      && <BoxesSection      {...props}/>}
         {sec==='types'      && <TypesSection      {...props}/>}
         {sec==='categories' && <CategoriesSection {...props}/>}
@@ -1005,6 +1005,12 @@ function PrintSection({printCfg, setPrintCfg, settings, setSettings}) {
   const set = (k,v) => setPrintCfg(p=>({...p,[k]:v,_updatedAt:new Date().toISOString()}));
   const setS = (k,v) => setSettings && setSettings(p=>({...p,[k]:v,_updatedAt:new Date().toISOString()}));
 
+  // เอกสารที่ตั้ง custom template ไว้ — Silent Print จะไม่รองรับ (จะเปิด dialog แทน)
+  const _tplLabels = [];
+  if (hasCanvasPrintTemplate(cfg.drugList)) _tplLabels.push('รายการยา');
+  if (hasCanvasPrintTemplate(cfg.sticker))  _tplLabels.push('สติ๊กเกอร์');
+  if (hasCanvasPrintTemplate(cfg.cover))    _tplLabels.push('Cover');
+
   useEffect(() => {
     (async () => {
       try {
@@ -1041,6 +1047,15 @@ function PrintSection({printCfg, setPrintCfg, settings, setSettings}) {
               หากยังไม่ได้เลือกเครื่องพิมพ์ จะ fallback ไปเปิด dialog อัตโนมัติ
             </div>
           )}
+          <div style={{fontSize:11,color:'#92400E',marginTop:10,lineHeight:1.6,
+            padding:'8px 10px',background:'#FFFBEB',border:'1px solid #FDE68A',borderRadius:6}}>
+            ⚠️ Silent Print รองรับเฉพาะรูปแบบมาตรฐาน — เอกสารที่ตั้ง <b>Template เอง</b> จะเปิดหน้าต่างพิมพ์ (print dialog) แทน เพื่อให้พิมพ์ตาม Template ที่ออกแบบไว้
+            {_tplLabels.length > 0 && (
+              <div style={{marginTop:6,color:'#B45309',fontWeight:600}}>
+                ขณะนี้มี Template เองที่: {_tplLabels.join(', ')}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Printer selectors */}

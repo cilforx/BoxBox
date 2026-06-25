@@ -177,19 +177,56 @@ function openBbEditor(mode, pageWmm, pageHmm, initElements, onSave) {
   // ── Build overlay DOM ──────────────────────────────────────────────────────
   var ov = document.createElement('div');
   ov.id = 'bbEditorOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;' +
-    'background:#F1F5F9;font-family:\'Segoe UI\',sans-serif;font-size:13px;color:#1F2937;';
+  ov.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(15,23,42,.35);' +
+    'font-family:\'Segoe UI\',sans-serif;font-size:13px;color:#1F2937;';
+
+  var frame = document.createElement('div');
+  frame.id = 'bbEditorFrame';
+  var frameW = Math.max(280, Math.min(window.innerWidth - 32, 1240));
+  var frameH = Math.max(280, Math.min(window.innerHeight - 32, 820));
+  var frameX = Math.max(12, Math.round((window.innerWidth - frameW) / 2));
+  var frameY = Math.max(12, Math.round((window.innerHeight - frameH) / 2));
+  frame.style.cssText = 'position:absolute;left:' + frameX + 'px;top:' + frameY + 'px;' +
+    'width:' + frameW + 'px;height:' + frameH + 'px;display:flex;flex-direction:column;' +
+    'background:#F1F5F9;border:1px solid #CBD5E1;border-radius:10px;overflow:hidden;' +
+    'box-shadow:0 18px 60px rgba(15,23,42,.28);resize:both;min-width:280px;min-height:280px;';
 
   // Toolbar
   var tb = document.createElement('div');
   tb.id = 'bbTb';
   tb.style.cssText = 'display:flex;align-items:center;gap:4px;padding:6px 10px;' +
-    'background:#fff;border-bottom:1px solid #E2E8F0;flex-shrink:0;flex-wrap:wrap;';
+    'background:#fff;border-bottom:1px solid #E2E8F0;flex-shrink:0;flex-wrap:wrap;cursor:move;user-select:none;';
 
   var modeLabel = mode === 'dl' ? '🖨️ ใบรายการยา (A4)'
     : mode === 'cv' ? '📋 Cover (A4 แนวนอน)'
     : '🏷️ สติกเกอร์ (' + pageWmm + 'mm × ' + pageHmm + 'mm)';
-  tb.innerHTML = '<span style="font-weight:700;color:#4F46E5;margin-right:8px;">' + modeLabel + '</span>';
+  tb.innerHTML = '<span style="color:#94A3B8;font-weight:700;margin-right:3px;">⋮⋮</span>' +
+    '<span style="font-weight:700;color:#4F46E5;margin-right:8px;">' + modeLabel + '</span>';
+
+  tb.addEventListener('mousedown', function(e) {
+    if (e.button !== 0) return;
+    if (e.target.closest('button,input,select,textarea')) return;
+    var rect = frame.getBoundingClientRect();
+    var startX = e.clientX;
+    var startY = e.clientY;
+    var baseX = rect.left;
+    var baseY = rect.top;
+    function moveFrame(ev) {
+      var maxX = Math.max(0, window.innerWidth - frame.offsetWidth);
+      var maxY = Math.max(0, window.innerHeight - Math.min(56, frame.offsetHeight));
+      var nx = Math.min(maxX, Math.max(0, baseX + ev.clientX - startX));
+      var ny = Math.min(maxY, Math.max(0, baseY + ev.clientY - startY));
+      frame.style.left = nx + 'px';
+      frame.style.top = ny + 'px';
+    }
+    function stopFrameDrag() {
+      document.removeEventListener('mousemove', moveFrame);
+      document.removeEventListener('mouseup', stopFrameDrag);
+    }
+    document.addEventListener('mousemove', moveFrame);
+    document.addEventListener('mouseup', stopFrameDrag);
+    e.preventDefault();
+  });
 
   function tbBtn(label, title, onclick) {
     var b = document.createElement('button');
@@ -322,8 +359,9 @@ function openBbEditor(mode, pageWmm, pageHmm, initElements, onSave) {
   body.appendChild(center);
   body.appendChild(right);
 
-  ov.appendChild(tb);
-  ov.appendChild(body);
+  frame.appendChild(tb);
+  frame.appendChild(body);
+  ov.appendChild(frame);
   document.body.appendChild(ov);
 
   // Mouse events on paper

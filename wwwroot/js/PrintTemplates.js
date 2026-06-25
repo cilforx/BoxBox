@@ -530,3 +530,7 @@ function openPrintWindow(html, opts) {
   pw.document.close();
   setTimeout(function() { pw.print(); }, 500);
 }
+
+function hasCanvasPrintTemplate(cfg) {
+  return !!(cfg && cfg.template && cfg.template.length);
+}

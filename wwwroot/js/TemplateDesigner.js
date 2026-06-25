@@ -93,10 +93,10 @@ function TemplateDesigner({ printCfg, setPrintCfg, settings }) {
         ))}
       </div>
 
-      <div style={{display:'flex',gap:20,alignItems:'flex-start'}}>
+      <div className="template-designer">
 
         {/* Left: settings */}
-        <div style={{width:272,flexShrink:0}}>
+        <div className="template-controls">
           <div className="card">
 
             {sub === 'drugList' && (
@@ -210,7 +210,7 @@ function TemplateDesigner({ printCfg, setPrintCfg, settings }) {
         </div>
 
         {/* Right: live preview */}
-        <div style={{flex:1,minWidth:0}}>
+        <div className="template-preview">
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}>
             <span style={{fontSize:11,color:'#94A3B8',fontWeight:600,
               textTransform:'uppercase',letterSpacing:.4}}>
