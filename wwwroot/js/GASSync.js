@@ -254,11 +254,11 @@ const _ARCHIVE_LIMITS = {
 
 const _SORT_FIELD = {
   wds_fills:       'filledAt',
-  wds_exchanges:   'updatedAt',
-  wds_dispatches:  'updatedAt',
-  wds_returns:     'updatedAt',
-  wds_notifyLog:   'updatedAt',
-  wds_lineHistory: 'updatedAt',
+  wds_exchanges:   'at',
+  wds_dispatches:  'at',
+  wds_returns:     'at',
+  wds_notifyLog:   'at',
+  wds_lineHistory: 'sentAt',
 };
 
 function gasArchiveIfNeeded() {

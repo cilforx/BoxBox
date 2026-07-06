@@ -200,8 +200,10 @@ function BoxesSection({boxes,setBoxes,boxTypes,categories,wards,fills,setFills,e
     if (setReturns)    setReturns(p=>p.filter(r=>r.boxId!==id));
   };
   const removeAll = () => {
-    if (!confirm('ลบกล่องทั้งหมด '+boxes.length+' กล่อง และประวัติทั้งหมด?')) return;
-    setBoxes([]); setFills([]);
+    if (!confirm('ลบกล่องทั้งหมด '+boxes.length+' กล่อง? (ประวัติใน cloud อาจปรากฏอีกครั้งหากยังไม่ sync)')) return;
+    const now = new Date().toISOString();
+    setBoxes(p => p.map(b => ({...b, deletedAt: now, updatedAt: now})));
+    setFills([]);
     setExchanges(p=>p.filter(e=>!boxes.find(b=>b.boxId===e.returnBoxId||b.boxId===e.dispatchBoxId)));
     if (setDispatches) setDispatches([]);
     if (setReturns)    setReturns([]);

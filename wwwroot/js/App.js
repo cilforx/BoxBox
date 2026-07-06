@@ -222,7 +222,7 @@ function App() {
     const boxDaysLeft = Math.round(
       (new Date(fill.filledAt).getTime() + expDays * 864e5 - Date.now()) / 864e5
     );
-    const drugDays = (fill.drugs || []).map(d => daysLeft(d.expiry)).filter(d => d !== null);
+    const drugDays = (fill.drugs || []).flatMap(d => drugExpiries(d)).map(daysLeft).filter(d => d !== null);
     const minDays  = drugDays.length ? Math.min(...drugDays) : null;
     const boxLv    = alertLv(boxDaysLeft, settings);
     const drugLv   = alertLv(minDays, settings);

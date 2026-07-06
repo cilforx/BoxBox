@@ -27,24 +27,28 @@ function getExpirySnapshot() {
         var wardName = ward ? ward.name : '';
 
         fill.drugs.forEach(function(drug) {
-          if (!drug.expiry) return;
-          var remain = daysLeft(drug.expiry);
-          if (remain === null || remain > alertYellow) return;
+          var expiries = drugExpiries(drug);
+          expiries.forEach(function(expiry) {
+            var remain = daysLeft(expiry);
+            if (remain === null || remain > alertYellow) return;
 
-          var level  = remain <= 0 ? 'expired' : remain <= alertRed ? 'red' : 'yellow';
-          var lotNo  = drug.lotNo || '';
-          var drugKey = box.boxId + '_' + drug.name + '_' + lotNo;
+            var level  = remain <= 0 ? 'expired' : remain <= alertRed ? 'red' : 'yellow';
+            var lotNo  = (drug.lots && drug.lots.length)
+              ? (drug.lots.find(function(l) { return l.expiry === expiry; }) || {}).lotNo || drug.lotNo || ''
+              : drug.lotNo || '';
+            var drugKey = box.boxId + '_' + drug.name + '_' + lotNo;
 
-          items.push({
-            drugKey:    drugKey,
-            drugName:   drug.name,
-            lotNo:      lotNo,
-            expireDate: drug.expiry,
-            boxId:      box.boxId,
-            wardName:   wardName,
-            quantity:   drug.qty || 0,
-            remainDays: remain,
-            alertLevel: level,
+            items.push({
+              drugKey:    drugKey,
+              drugName:   drug.name,
+              lotNo:      lotNo,
+              expireDate: expiry,
+              boxId:      box.boxId,
+              wardName:   wardName,
+              quantity:   drug.qty || 0,
+              remainDays: remain,
+              alertLevel: level,
+            });
           });
         });
       });

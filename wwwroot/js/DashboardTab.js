@@ -214,7 +214,7 @@ function DashboardTab({boxes,setBoxes,fills,setFills,boxTypes,categories,wards,s
     const ward = wards.find(w=>w.id===b.wardId);
     let minDays = null;
     if (fill?.drugs?.length) {
-      const ds = fill.drugs.map(d=>daysLeft(d.expiry)).filter(v=>v!==null);
+      const ds = fill.drugs.flatMap(d=>drugExpiries(d)).map(daysLeft).filter(v=>v!==null);
       if (ds.length) minDays = Math.min(...ds);
     }
     // หมดอายุกล่อง (มีผลจริง) = min(filledAt + อายุกล่อง, ยาหมดอายุเร็วสุด)

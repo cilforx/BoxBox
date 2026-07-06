@@ -41,6 +41,12 @@ const getBoxExpDate = (filledAt, drugs, type, settings) => {
   return (minDrug && minDrug < byBox) ? minDrug : byBox;
 };
 
+// คืน expiry ทุกรายการของยา (รองรับ multi-lot)
+const drugExpiries = (d) =>
+  (d && d.lots && d.lots.length)
+    ? d.lots.map(l => l.expiry).filter(Boolean)
+    : (d && d.expiry ? [d.expiry] : []);
+
 // format date → dd-mm-yyyy (หรือ dd-mm-yyyy HH:MM)
 // yearType: 'be' = พ.ศ. (+543), 'ce' = ค.ศ., falsy = default BE
 const fmtDate = (isoOrDate, yearType, withTime) => {

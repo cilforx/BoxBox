@@ -133,8 +133,8 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     : '#E5E7EB';
   const bgAlert = (box.worstLv === 'expired' || box.worstLv === 'red') ? '#FEE2E2' : '#fff';
 
-  const expiredDrugs = (box.fill?.drugs || []).filter(d => { const dl = daysLeft(d.expiry); return dl !== null && dl <= 0; }).length;
-  const nearExpDrugs = (box.fill?.drugs || []).filter(d => { const dl = daysLeft(d.expiry); return dl !== null && dl > 0 && dl <= (settings?.alertRed || 7); }).length;
+  const expiredDrugs = (box.fill?.drugs || []).filter(d => drugExpiries(d).some(e => { const dl = daysLeft(e); return dl !== null && dl <= 0; })).length;
+  const nearExpDrugs = (box.fill?.drugs || []).filter(d => drugExpiries(d).some(e => { const dl = daysLeft(e); return dl !== null && dl > 0 && dl <= (settings?.alertRed || 7); })).length;
   const blockDispatch = expiredDrugs > 0 || nearExpDrugs > 0;
 
   useEffect(() => {
@@ -163,8 +163,8 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
 
   const setFilling = (e) => {
     e.stopPropagation(); setMenu(false);
-    const updatedBox = {...box, status:'filling'};
-    setBoxes(p=>p.map(b=>b.boxId===box.boxId?{...b,status:'filling'}:b));
+    const updatedBox = {...box, status:'filling', updatedAt: new Date().toISOString()};
+    setBoxes(p=>p.map(b=>b.boxId===box.boxId?{...b,status:'filling',updatedAt:new Date().toISOString()}:b));
     openFillModal(updatedBox);
   };
 
@@ -273,9 +273,10 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     e.stopPropagation();
     if (!selWard) return;
     const returning = autoReturn.filter(b => selReturnIds.includes(b.boxId));
+    const now = new Date().toISOString();
     setBoxes(p => p.map(b => {
-      if (b.boxId === box.boxId) return {...b, status:'dispatched', wardId:selWard};
-      if (returning.find(r => r.boxId === b.boxId)) return {...b, status:'filling', wardId:''};
+      if (b.boxId === box.boxId) return {...b, status:'dispatched', wardId:selWard, updatedAt:now};
+      if (returning.find(r => r.boxId === b.boxId)) return {...b, status:'filling', wardId:'', updatedAt:now};
       return b;
     }));
     if (returning.length > 0 && setExchanges) {
@@ -299,7 +300,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     const wardId = box.wardId;
     const now = new Date().toISOString();
     setBoxes(p => p.map(b =>
-      b.boxId === box.boxId ? {...b, status:'filling'} : b
+      b.boxId === box.boxId ? {...b, status:'filling', updatedAt:now} : b
     ));
     if (setExchanges) {
       setExchanges(p => [...p, {
@@ -317,8 +318,8 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     const wardId = box.wardId;
     const now = new Date().toISOString();
     setBoxes(p => p.map(b => {
-      if (b.boxId === box.boxId)     return {...b, status:'filling', wardId:''};
-      if (b.boxId === selDispatchId) return {...b, status:'dispatched', wardId};
+      if (b.boxId === box.boxId)     return {...b, status:'filling', wardId:'', updatedAt:now};
+      if (b.boxId === selDispatchId) return {...b, status:'dispatched', wardId, updatedAt:now};
       return b;
     }));
     if (setExchanges) {
@@ -443,7 +444,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
                   ].filter(([v])=>v!==box.status).map(([v,l])=>(
                     <button key={v}
                       onClick={e=>{e.stopPropagation();setMenu(false);
-                        setBoxes(p=>p.map(b=>b.boxId===box.boxId?{...b,status:v}:b));}}
+                        setBoxes(p=>p.map(b=>b.boxId===box.boxId?{...b,status:v,updatedAt:new Date().toISOString()}:b));}}
                       style={{display:'block',width:'100%',textAlign:'left',
                         padding:'9px 14px',border:'none',background:'none',cursor:'pointer',
                         fontSize:13,color: v==='retired'?'#B91C1C':'#374151'}}
