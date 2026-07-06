@@ -116,7 +116,7 @@ namespace BoxBox
         {
             LabelData? data;
             try { data = JsonConvert.DeserializeObject<LabelData>(json); }
-            catch { return; }
+            catch { ShowAlert("ข้อมูลพิมพ์ไม่ถูกต้อง"); return; }
             if (data == null) return;
 
             _owner.Invoke(() =>
@@ -132,7 +132,7 @@ namespace BoxBox
         {
             CoverData? data;
             try { data = JsonConvert.DeserializeObject<CoverData>(json); }
-            catch { return; }
+            catch { ShowAlert("ข้อมูลพิมพ์ไม่ถูกต้อง"); return; }
             if (data == null) return;
 
             _owner.Invoke(() =>
@@ -148,7 +148,7 @@ namespace BoxBox
         {
             StickerData? data;
             try { data = JsonConvert.DeserializeObject<StickerData>(json); }
-            catch { return; }
+            catch { ShowAlert("ข้อมูลพิมพ์ไม่ถูกต้อง"); return; }
             if (data == null) return;
 
             _owner.Invoke(() =>
@@ -164,7 +164,7 @@ namespace BoxBox
         {
             LabelData? data;
             try { data = JsonConvert.DeserializeObject<LabelData>(json); }
-            catch { ShowAlert("JSON parse error"); return; }
+            catch { ShowAlert("ข้อมูลพิมพ์ไม่ถูกต้อง"); return; }
             if (data == null) return;
 
             _owner.Invoke(() =>
@@ -182,7 +182,7 @@ namespace BoxBox
         {
             LabelData? data;
             try { data = JsonConvert.DeserializeObject<LabelData>(json); }
-            catch { return; }
+            catch { ShowAlert("ข้อมูลพิมพ์ไม่ถูกต้อง"); return; }
             if (data == null) return;
 
             _owner.Invoke(() =>

@@ -16,8 +16,8 @@
     <Description>Ward Emergency Drug Box Management</Description>
     <FileDescription>BoxBox — Ward Emergency Drug Box Management</FileDescription>
     <Copyright>Copyright 2568 กลุ่มงานเภสัชกรรม โรงพยาบาลสมเด็จพระยุพราชสว่างแดนดิน</Copyright>
-    <AssemblyVersion>1.2.6.0</AssemblyVersion>
-    <FileVersion>1.2.6.0</FileVersion>
+    <AssemblyVersion>1.3.5.0</AssemblyVersion>
+    <FileVersion>1.3.5.0</FileVersion>
     <!-- Multi-file publish avoids compressed self-extracting EXE patterns that trigger AV heuristics. -->
     <PublishSingleFile>false</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
@@ -38,9 +38,6 @@
   <!-- Copy wwwroot/ ทั้งหมดไปที่ output directory -->
   <ItemGroup>
     <Content Include="wwwroot\**\*">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </Content>
-    <Content Include="gas_dev.txt">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>

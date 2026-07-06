@@ -197,7 +197,7 @@ function _dmGetHistMap() {
 function _dmNormKey(name) {
   return (name || '').toLowerCase()
     .replace(/[^\wก-๙]/g, ' ')
-    .replace(/\b(ตู้เย็น|ยาชา|had|usp)\b/g, '')
+    .replace(/(ตู้เย็น|ยาชา)/g, '').replace(/\b(had|usp)\b/g, '')
     .replace(/\s+/g, ' ').trim();
 }
 

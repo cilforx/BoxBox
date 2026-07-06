@@ -64,7 +64,8 @@ function normalizeDate(raw) {
     if (yy > 2400) yy -= 543;          // Buddhist → CE
     else if (yy < 100) yy += yy > 50 ? 1900 : 2000;
     var candidate = new Date(yy, mm - 1, dd);
-    if (!isNaN(candidate.getTime()))
+    if (!isNaN(candidate.getTime()) &&
+        candidate.getFullYear() === yy && candidate.getMonth() === mm - 1 && candidate.getDate() === dd)
       return yy + '-' + String(mm).padStart(2,'0') + '-' + String(dd).padStart(2,'0');
   }
 

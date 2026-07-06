@@ -171,7 +171,7 @@ function RegisterModal({ onDone }) {
             <div style={{fontSize:12,color:'#374151',marginBottom:6,fontWeight:500}}>
               รหัสสถานพยาบาล (ถ้าทราบ)
             </div>
-            <input value={manualCode} onChange={e => setManualCode(e.target.value.replace(/\D/,'').slice(0,5))}
+            <input value={manualCode} onChange={e => setManualCode(e.target.value.replace(/\D/g,'').slice(0,5))}
               placeholder="12345"
               style={{...sty.manualInput, fontFamily:'monospace', width:120}}/>
             <div style={{marginTop:4}}>

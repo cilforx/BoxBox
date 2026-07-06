@@ -106,6 +106,7 @@ const OverviewSection = ({boxes, fills, boxTypes, settings, expiredRows,
 
 // ─── Report Tab ───────────────────────────────────────────────────────────────
 function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxTypes, settings, notifyLog, reportSection, historyBoxId, boxConfirmations}) {
+  const today = new Date().toISOString().slice(0, 10);
   const [section,      setSection]      = useUIState('reportSec', 'overview');
   const [selBox,       setSelBox]       = useState('');
   const [expiringMode, setExpiringMode] = useState('box');
@@ -127,8 +128,6 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
 
   useEffect(() => { if (reportSection) setSection(reportSection); }, [reportSection]);
   useEffect(() => { if (historyBoxId) setSelBox(historyBoxId); }, [historyBoxId]);
-
-  const today = new Date().toISOString().slice(0, 10);
 
   const fmt   = iso => fmtDate(iso, settings?.displayYear);
   const fmtDT = iso => fmtDate(iso, settings?.displayYear, true);

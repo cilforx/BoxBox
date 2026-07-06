@@ -90,8 +90,9 @@ function App() {
   };
 
   // ── GAS sync helpers ───────────────────────────────────────────────────────
-  const pushTimer     = useRef(null);
-  const isSyncingRef  = useRef(false);
+  const pushTimer        = useRef(null);
+  const isSyncingRef     = useRef(false);
+  const startupSyncDone  = useRef(false);
   const gasConfigRef  = useRef(gasConfig);
   const lineConfigRef = useRef(lineConfig);
   useEffect(() => { gasConfigRef.current  = gasConfig;  }, [gasConfig]);
@@ -135,7 +136,7 @@ function App() {
 
   // Pull-merge-push on startup: merge local + remote so both sides converge
   useEffect(() => {
-    if (!gasConfig.enabled || !gasConfig.url) return;
+    if (!gasConfig.enabled || !gasConfig.url) { startupSyncDone.current = true; return; }
     if (localStorage.getItem('wds_skipStartupSync')) {
       localStorage.removeItem('wds_skipStartupSync');
       return;
@@ -158,7 +159,7 @@ function App() {
         setSyncStatus('local');
         setSyncError('Startup sync failed; using local data. ' + (e.message || String(e)));
       })
-      .finally(() => { isSyncingRef.current = false; });
+      .finally(() => { isSyncingRef.current = false; startupSyncDone.current = true; });
   }, []);
 
   // Track network connectivity + retry heartbeat when back online
@@ -176,6 +177,7 @@ function App() {
   const doPush = useCallback(() => {
     const cfg = gasConfigRef.current;
     if (!cfg.enabled || !cfg.url) return;
+    if (!startupSyncDone.current) return;
     if (isSyncingRef.current) return;
     clearTimeout(pushTimer.current);
     pushTimer.current = setTimeout(() => {
