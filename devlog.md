@@ -1,6 +1,6 @@
 # BoxBox — Dev Log
 
-> อัปเดตล่าสุด: 2026-07-06 (v1.3.6, bugfix batch)
+> อัปเดตล่าสุด: 2026-07-06 (v1.3.7)
 
 ---
 
@@ -649,6 +649,25 @@ INV_MD_C    → WORKING_CODE (FK), LOT_NO, EXPIRED_DATE (YYYYMMDD CE), QTY_ON_HA
 ## 📋 Version History
 <!-- อัปเดต section นี้ทุกครั้งที่ deploy เวอร์ชันใหม่ แล้วรัน: python update_changelog.py -->
 <!-- format: ### v{version} — {วันที่ ไทย} -->
+
+### v1.3.7 — 6 ก.ค. 2569
+- แก้ LINE Mode 1 ไม่ส่งข้อความ — ขาด mode:'mode1' ใน request + บันทึก sent-today เฉพาะตอนส่งสำเร็จ
+- แก้ GAS Mode 2 daily trigger ไม่ส่ง — _getExpiryFromDB อ่าน DB ผิดวิธี; ตอนนี้ใช้ _readDB()
+- แก้ status กล่อง (จ่าย/เปลี่ยน/รับคืน/เลิกใช้) ไม่บันทึก updatedAt → sync reverts ค่าที่แก้ไป
+- แก้ removeAll ลบ hard delete → ตอนนี้ tombstone (deletedAt) เพื่อป้องกัน cloud resurrect
+- แก้ archive trim ตัดรายการใหม่แทนรายการเก่า — แก้ _SORT_FIELD ให้ตรงกับ field จริง
+- แก้ยา multi-lot ไม่ปรากฏในแจ้งเตือนหมดอายุ — เพิ่ม drugExpiries() อ่าน lots ทุก lot
+- เสริม IsSafeSql — บังคับขึ้นต้น SELECT, ไม่มี semicolon/INTO/xp_
+- แก้ NotificationTab mode schema — ใช้ flags mode1/mode2 แทน string 'mode1'/'mode2' เดิม
+- แก้ prefill source switch ดึงยาที่ลบแล้วกลับมา
+- auto-push ครอบคลุม master data (categories/boxTypes/wards/staff/printCfg)
+- QR สร้างจาก library ในตัว — ไม่ต้องพึ่ง api.qrserver.com (offline ได้)
+- HttpClient timeout = infinite (รองรับดาวน์โหลดไฟล์อัปเดตขนาดใหญ่)
+- วันหมดอายุยาในรายการยาที่พิมพ์แสดง dd-mm-yyyy ทุกเครื่อง
+- แก้เล็กน้อย: zoom script position, today hoisting, csproj version, regex g flag, date validation
+
+### v1.3.6 — 6 ก.ค. 2569
+- วันหมดอายุกล่อง = min(อายุกล่อง, ยาที่หมดอายุก่อน) — รองรับ multi-lot
 
 ### v1.3.5 — 25 มิ.ย. 2569
 - แก้ custom print template ไม่ถูกใช้กับกล่องจริง — เดิมพิมพ์ทดสอบได้แต่กล่องจริงออกเป็น default เพราะ silent print (GDI) วิ่งก่อน template; ตอนนี้ถ้าตั้ง Template เองจะข้าม silent ไปใช้ template

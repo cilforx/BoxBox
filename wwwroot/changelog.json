@@ -1,0 +1,196 @@
+[
+  {
+    "version": "1.3.7",
+    "date": "6 ก.ค. 2569",
+    "changes": [
+      "แก้ LINE Mode 1 ไม่ส่งข้อความ — ขาด mode:'mode1' ใน request + บันทึก sent-today เฉพาะตอนส่งสำเร็จ",
+      "แก้ GAS Mode 2 daily trigger ไม่ส่ง — _getExpiryFromDB อ่าน DB ผิดวิธี; ตอนนี้ใช้ _readDB()",
+      "แก้ status กล่อง (จ่าย/เปลี่ยน/รับคืน/เลิกใช้) ไม่บันทึก updatedAt → sync reverts ค่าที่แก้ไป",
+      "แก้ removeAll ลบ hard delete → ตอนนี้ tombstone (deletedAt) เพื่อป้องกัน cloud resurrect",
+      "แก้ archive trim ตัดรายการใหม่แทนรายการเก่า — แก้ _SORT_FIELD ให้ตรงกับ field จริง",
+      "แก้ยา multi-lot ไม่ปรากฏในแจ้งเตือนหมดอายุ — เพิ่ม drugExpiries() อ่าน lots ทุก lot",
+      "เสริม IsSafeSql — บังคับขึ้นต้น SELECT, ไม่มี semicolon/INTO/xp_",
+      "แก้ NotificationTab mode schema — ใช้ flags mode1/mode2 แทน string 'mode1'/'mode2' เดิม",
+      "แก้ prefill source switch ดึงยาที่ลบแล้วกลับมา",
+      "auto-push ครอบคลุม master data (categories/boxTypes/wards/staff/printCfg)",
+      "QR สร้างจาก library ในตัว — ไม่ต้องพึ่ง api.qrserver.com (offline ได้)",
+      "HttpClient timeout = infinite (รองรับดาวน์โหลดไฟล์อัปเดตขนาดใหญ่)",
+      "วันหมดอายุยาในรายการยาที่พิมพ์แสดง dd-mm-yyyy ทุกเครื่อง",
+      "แก้เล็กน้อย: zoom script position, today hoisting, csproj version, regex g flag, date validation"
+    ]
+  },
+  {
+    "version": "1.3.6",
+    "date": "6 ก.ค. 2569",
+    "changes": [
+      "วันหมดอายุกล่อง = min(อายุกล่อง, ยาที่หมดอายุก่อน) — รองรับ multi-lot"
+    ]
+  },
+  {
+    "version": "1.3.5",
+    "date": "25 มิ.ย. 2569",
+    "changes": [
+      "แก้ custom print template ไม่ถูกใช้กับกล่องจริง — เดิมพิมพ์ทดสอบได้แต่กล่องจริงออกเป็น default เพราะ silent print (GDI) วิ่งก่อน template; ตอนนี้ถ้าตั้ง Template เองจะข้าม silent ไปใช้ template",
+      "แจ้งข้อจำกัดในตั้งค่า Silent Print ว่าเอกสารที่ตั้ง Template เองจะเปิด print dialog แทน (พร้อมแสดงรายการชนิดที่ตั้งไว้)"
+    ]
+  },
+  {
+    "version": "1.3.4",
+    "date": "15 มิ.ย. 2569",
+    "changes": [
+      "แก้ตรวจสอบความพร้อมใช้ผ่านคิวอาร์โค้ด — บางกล่องไม่แสดงวันหมดอายุ ตอนนี้ fallback ใช้ filledAt จาก QR คำนวณได้แม้ fill ไม่อยู่ใน GAS DB"
+    ]
+  },
+  {
+    "version": "1.3.3",
+    "date": "15 มิ.ย. 2569",
+    "changes": [
+      "แก้กล่องที่ลบแล้วยังปรากฏในแจ้งเตือน (popup/badge) — notifyAlerts recompute ทุกครั้งที่ข้อมูลเปลี่ยน",
+      "แก้กล่อง \"เลิกใช้\" ยังโผล่ในแจ้งเตือน",
+      "แก้ banner เตือนพื้นที่จัดเก็บบดบัง tab-nav — เปลี่ยนเป็น inline ปิดได้ + หายเองใน 1 นาที"
+    ]
+  },
+  {
+    "version": "1.3.2",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "แก้ SHA mismatch เวลา auto-update — DriveDownloadAsync() handle Google Drive HTML confirmation page ได้ถูกต้อง (ดึง uuid → retry)",
+      "แก้ error message \"ตรวจสอบ GAS URL ใน Settings\" → \"กรุณาลองใหม่อีกครั้ง\"",
+      "แก้ QR Confirm Page หมดอายุกล่อง/บรรจุเมื่อ format ตรงกับ Dashboard (dd-mm-yyyy พ.ศ.)"
+    ]
+  },
+  {
+    "version": "1.3.1",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "แก้ QR Confirm Page แสดง \"หมดอายุกล่อง\" ไม่ตรงกับ Dashboard — recalculate จาก filledAt+expDays เหมือน Dashboard และ format เป็น dd-mm-yyyy พ.ศ."
+    ]
+  },
+  {
+    "version": "1.3.0",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "ทดสอบระบบ auto-update end-to-end (SHA-256 verify + progress + error message)"
+    ]
+  },
+  {
+    "version": "1.2.9",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "แก้ error 0x13D/0x80131604 ตอนกดอัปเดต — เปลี่ยน StartUpdate เป็น Task<string> คืน JSON แทนการ throw"
+    ]
+  },
+  {
+    "version": "1.2.8",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "Archive ข้อมูลเก่าอัตโนมัติเมื่อ fills/exchanges/logs เกิน threshold ป้องกัน localStorage เต็ม",
+      "แสดง warning banner เมื่อพื้นที่จัดเก็บใช้เกิน 3 MB (จาก ~5 MB)"
+    ]
+  },
+  {
+    "version": "1.2.7",
+    "date": "8 มิ.ย. 2569",
+    "changes": [
+      "Security: auto-update ต้องกดปุ่มเอง ไม่ silent install อัตโนมัติอีกแล้ว",
+      "Security: ตรวจ SHA-256 ก่อนรัน installer ทุกครั้ง (ป้องกันไฟล์เสีย/ถูกสับเปลี่ยน)",
+      "Security: ลด privilege — แอปไม่ขอ admin อีกแล้ว",
+      "ชี้แจงใน installer: dialog + readme.txt อธิบายว่าทำไม Windows แจ้งเตือน"
+    ]
+  },
+  {
+    "version": "1.2.6",
+    "date": "5 มิ.ย. 2569",
+    "changes": [
+      "ขยาย zoom range เป็น 50%–100% (เดิม 70%–100%)"
+    ]
+  },
+  {
+    "version": "1.2.5",
+    "date": "5 มิ.ย. 2569",
+    "changes": [
+      "แก้ date format ใน FillModal — บางเครื่องแสดง mm/dd/yyyy เพราะ WebView2 ใช้ OS locale; เพิ่ม `--lang=th-TH` ให้ทุกเครื่องแสดง dd/mm/yyyy เหมือนกัน"
+    ]
+  },
+  {
+    "version": "1.2.4",
+    "date": "5 มิ.ย. 2569",
+    "changes": [
+      "แก้ bug แสดง \"v9.9.9 update\" ผิด — ตัด fallback version.json เก่า (v1) ออก ใช้ GAS webhook อย่างเดียว"
+    ]
+  },
+  {
+    "version": "1.2.3",
+    "date": "5 มิ.ย. 2569",
+    "changes": [
+      "ปุ่ม \"🔄 ตรวจสอบ update\" ใน changelog dropdown — ตรวจสอบและอัปเดตได้ทันทีโดยไม่ต้องรอ startup",
+      "อัปเกรด .NET 8 → .NET 9 (self-contained build, runtime ติดมากับ .exe)"
+    ]
+  },
+  {
+    "version": "1.2.2",
+    "date": "5 มิ.ย. 2569",
+    "changes": [
+      "QR confirm page: แสดงชื่อยาในรายการ (แก้ CSS layout ที่ squeeze ชื่อยาจนมองไม่เห็น)",
+      "เพิ่ม Zoom control ใน Settings — ปรับขนาด UI เฉพาะเครื่อง (70%–100%) ไม่ sync ข้ามเครื่อง",
+      "Loading animation — circle progress bar พร้อมข้อความ \"กำลังโหลด…\" เมื่อเปิดโปรแกรม"
+    ]
+  },
+  {
+    "version": "1.2.1",
+    "date": "4 มิ.ย. 2569",
+    "changes": [
+      "QR confirm page mobile-friendly — ขนาดตัวอักษรใหญ่ขึ้น (vw units), เต็มหน้าจอ, รองรับ pinch-zoom",
+      "เพิ่มข้อมูลในหน้ายืนยัน: หมดอายุกล่อง, ผู้เตรียมยา, เภสัชกร",
+      "รายการยาแสดงใน 1 แถว: เลข + ชื่อยา + Lot + EXP + จำนวน"
+    ]
+  },
+  {
+    "version": "1.2.0",
+    "date": "27 พ.ค. 2569",
+    "changes": [
+      "Drug Matching Engine (drugmatcher.js) — score-based matching BoxBox ↔ INVS, Levenshtein fuzzy, ป้องกัน Ca-gluconate/folinate สลับ",
+      "ปรับ autoMatch ใช้ historical dataset (100+ pairs) + scoring threshold แทน \"ผลเดียว\"",
+      "ตั้งค่า Online แยกจาก LINE — GAS script generator แยกเป็น sync-only / sync+LINE",
+      "LINE Notify คืน Mode 1 / Mode 2 selection พร้อม GAS script สำหรับ Mode 2",
+      "INVS ตั้งค่าอัตโนมัติจาก invs.ini — ไม่แสดง form fields",
+      "จัดเรียง sidebar Settings ใหม่ตาม user journey"
+    ]
+  },
+  {
+    "version": "1.1.2",
+    "date": "26 พ.ค. 2569",
+    "changes": [
+      "Auto-update แบบ filename-based — อัปโหลด BoxBoxSetup{version}.exe ขึ้น Drive → แอปตรวจพบและอัปเดตอัตโนมัติ",
+      "devlog.md เป็น single source of truth สำหรับประวัติเวอร์ชัน (แทน Google Sheets \"Version\" sheet)",
+      "เพิ่ม update_changelog.py — parse devlog.md → wwwroot/changelog.json",
+      "App.js โหลด changelog.json แบบ dynamic แทน hardcoded CHANGELOG array"
+    ]
+  },
+  {
+    "version": "1.1.1",
+    "date": "21 พ.ค. 2568",
+    "changes": [
+      "ระบบแจ้งเตือนยาใกล้หมดอายุผ่าน LINE — รองรับ 2 โหมด (C# timer / GAS trigger)"
+    ]
+  },
+  {
+    "version": "1.1.0",
+    "date": "20 พ.ค. 2568",
+    "changes": [
+      "ซิงค์ GAS แบบ record-level merge — ป้องกันข้อมูลหายเมื่อใช้หลายเครื่อง offline",
+      "จดจำ tab / filter / มุมมอง Dashboard เมื่อเปิดโปรแกรมใหม่",
+      "เพิ่มประวัติ version และแบบฟอร์มแจ้งปัญหา"
+    ]
+  },
+  {
+    "version": "1.0.0",
+    "date": "1 ม.ค. 2568",
+    "changes": [
+      "เปิดตัวระบบ BoxBox — บริหารกล่องยาฉุกเฉิน",
+      "รองรับ 8 ประเภทกล่อง (CPR, PPH, PIH, ACS, ฉุกเฉิน OR/ER, EMS)",
+      "Dashboard, รายงาน, FillModal, แลกกล่อง, ตั้งค่า",
+      "ซิงค์กับ Google Sheets ผ่าน GAS"
+    ]
+  }
+]

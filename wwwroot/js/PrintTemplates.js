@@ -2,6 +2,13 @@
 // Global functions for configurable HTML print templates.
 // Loaded before components.js so FillModal and TemplateDesigner can call them.
 
+// แปลง ISO YYYY-MM-DD → dd-mm-yyyy (string manipulation — ไม่ผ่าน Date() เพื่อป้องกัน timezone drift)
+function _fmtExp(iso) {
+  if (!iso) return '—';
+  var m = String(iso).match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  return m ? m[3] + '-' + m[2] + '-' + m[1] : String(iso);
+}
+
 // Default section arrays — exposed as globals so TemplateDesigner can reference them
 var PT_DL_DEFAULT_SECTIONS = [
   { id:'s_header',  type:'field', key:'header',     label:'ส่วนหัว',  enabled:true },
@@ -101,7 +108,7 @@ function _buildFromTemplate(elements, data, pageWmm, pageHmm) {
           '<td style="' + tdStyle + 'text-align:left;">' + (d.name||'') + '</td>' +
           '<td style="' + tdLotStyle + '">' + (d.lotNo||'—') + '</td>' +
           '<td style="' + tdStyle + '">' + (d.qty||'') + '</td>' +
-          '<td style="' + tdStyle + '">' + (d.expiry||'—') + '</td>' +
+          '<td style="' + tdStyle + '">' + _fmtExp(d.expiry) + '</td>' +
           '</tr>';
       }).join('');
       return '<div style="' + style + 'overflow:visible;">' +
@@ -325,7 +332,7 @@ function buildDrugListHtml(data, cfg) {
       '<td>' + (d.name||'') + '</td>' +
       '<td style="text-align:center;font-family:monospace;font-size:0.88em;color:#6B7280">' + (d.lotNo||'—') + '</td>';
     if (c.showQty)        cells += '<td style="text-align:center">' + (d.qty||'') + '</td>';
-    if (c.showDrugExpiry) cells += '<td style="text-align:center">' + (d.expiry||'—') + '</td>';
+    if (c.showDrugExpiry) cells += '<td style="text-align:center">' + _fmtExp(d.expiry) + '</td>';
     return '<tr>' + cells + '</tr>';
   }).join('');
 

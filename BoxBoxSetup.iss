@@ -1,5 +1,5 @@
 #define AppName "BoxBox"
-#define AppVersion "1.3.5"
+#define AppVersion "1.3.7"
 #define AppExeName "BoxBox.exe"
 #define SourceDir "D:\COACH\source\repo\BoxBox\bin\Release\net9.0-windows\win-x64\publish"
 
