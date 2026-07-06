@@ -157,24 +157,39 @@ function _buildFromTemplate(elements, data, pageWmm, pageHmm) {
 
 var _qrDataUrlCache = {};
 
+function _genQrDataUrl(text) {
+  // generate locally via embedded qrcode-generator; returns data-URL
+  // eslint-disable-next-line no-eval
+  return (function() { eval(_BB_QR_LIB); var qr = qrcode(0,'M'); qr.addData(text,'Byte'); qr.make(); return qr.createDataURL(4,8); })();
+}
+
 async function prefetchCoverQr(data) {
   var qrUrl = _coverQrUrl(data);
   if (!qrUrl || _qrDataUrlCache[qrUrl]) return;
   try {
-    var res = await fetch('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qrUrl));
-    if (!res.ok) return;
-    var blob = await res.blob();
-    _qrDataUrlCache[qrUrl] = await new Promise(function(resolve) {
-      var r = new FileReader();
-      r.onload = function(e) { resolve(e.target.result); };
-      r.readAsDataURL(blob);
-    });
-  } catch(e) {}
+    _qrDataUrlCache[qrUrl] = _genQrDataUrl(qrUrl);
+  } catch(e) {
+    // fallback to api.qrserver.com when offline QR generation fails
+    try {
+      var res = await fetch('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qrUrl));
+      if (!res.ok) return;
+      var blob = await res.blob();
+      _qrDataUrlCache[qrUrl] = await new Promise(function(resolve) {
+        var r = new FileReader();
+        r.onload = function(ev) { resolve(ev.target.result); };
+        r.readAsDataURL(blob);
+      });
+    } catch(e2) {}
+  }
 }
 
 function _qrImgHtml(qrUrl, sizeCss) {
-  var src = _qrDataUrlCache[qrUrl] ||
-    ('https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qrUrl));
+  var src = _qrDataUrlCache[qrUrl];
+  if (!src) {
+    try { src = _genQrDataUrl(qrUrl); _qrDataUrlCache[qrUrl] = src; } catch(e) {
+      src = 'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=' + encodeURIComponent(qrUrl);
+    }
+  }
   return '<img src="' + src + '" alt="QR" style="display:block;' + sizeCss + '"/>';
 }
 

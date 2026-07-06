@@ -32,7 +32,7 @@ function NotifStatusBadge({ entry }) {
   if (entry.skipped) {
     return <span style={{ fontSize: 10, color: '#9CA3AF' }}>ซ้ำ</span>;
   }
-  if (entry.mode === 'mode2' && !entry.lineSent) {
+  if (entry.mode === 'gas_trigger' && !entry.lineSent) {
     return <span style={{ fontSize: 10, color: '#D97706', fontWeight: 600 }}>⏳ รอ GAS</span>;
   }
   if (entry.lineSent) {
@@ -70,8 +70,8 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
   var todayStr = new Date().toDateString();
   var filtered = history.filter(function(e) {
     if (filter === 'today') return new Date(e.sentAt).toDateString() === todayStr;
-    if (filter === 'mode1') return e.mode === 'mode1';
-    if (filter === 'mode2') return e.mode === 'mode2';
+    if (filter === 'mode1') return e.mode === 'direct';
+    if (filter === 'mode2') return e.mode === 'gas_trigger';
     if (filter === 'line_ok') return e.lineSent === true;
     if (filter === 'skipped') return e.skipped === true;
     return true;
@@ -80,7 +80,7 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
   // Stats
   var totalCount  = history.length;
   var lineOkCount = history.filter(function(e) { return e.lineSent; }).length;
-  var pendingCount= history.filter(function(e) { return e.mode==='mode2' && !e.lineSent && !e.skipped; }).length;
+  var pendingCount= history.filter(function(e) { return e.mode==='gas_trigger' && !e.lineSent && !e.skipped; }).length;
   var skippedCount= history.filter(function(e) { return e.skipped; }).length;
 
   // Pagination (LINE)
@@ -98,12 +98,13 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
   var appTotalPages = Math.ceil(appRows.length / PAGE_SIZE);
   var appPaginated  = appRows.slice(appPage * PAGE_SIZE, (appPage + 1) * PAGE_SIZE);
 
+  var m1On = lineConfig && (lineConfig.mode1 !== undefined ? !!lineConfig.mode1 : true);
+  var m2On = lineConfig && !!lineConfig.mode2;
   var modeLabel = !lineConfig || !lineConfig.enabled
     ? '⛔ ปิดใช้งาน'
-    : lineConfig.mode === 'mode1'
-    ? '📱 Mode 1 — ส่ง LINE โดยตรง'
-    : lineConfig.mode === 'mode2'
-    ? '☁ Mode 2 — ผ่าน GAS'
+    : (m1On && m2On) ? '📱+☁ Mode 1+2'
+    : m1On ? '📱 Mode 1 — ส่ง LINE โดยตรง'
+    : m2On ? '☁ Mode 2 — ผ่าน GAS'
     : '⛔ ปิดใช้งาน';
 
   async function handleRunNow() {
@@ -182,17 +183,17 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
         <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
           <button
             onClick={handleRunNow}
-            disabled={runStatus === 'running' || !lineConfig || !lineConfig.enabled || lineConfig.mode === 'off'}
+            disabled={runStatus === 'running' || !lineConfig || !lineConfig.enabled}
             style={{
               padding: '8px 16px', borderRadius: 8, border: 'none', fontSize: 12,
               fontWeight: 600, cursor: 'pointer',
               background: runStatus === 'done' ? '#D1FAE5'
                 : runStatus === 'error' ? '#FEE2E2'
-                : (!lineConfig || !lineConfig.enabled || lineConfig.mode === 'off') ? '#F3F4F6'
+                : (!lineConfig || !lineConfig.enabled) ? '#F3F4F6'
                 : '#4F46E5',
               color: runStatus === 'done' ? '#065F46'
                 : runStatus === 'error' ? '#991B1B'
-                : (!lineConfig || !lineConfig.enabled || lineConfig.mode === 'off') ? '#9CA3AF'
+                : (!lineConfig || !lineConfig.enabled) ? '#9CA3AF'
                 : '#fff',
             }}>
             {runStatus === 'running' ? '⏳ กำลังตรวจสอบ...'
@@ -419,7 +420,7 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
                       </td>
                       <td style={{...tdStyle, textAlign: 'center', fontSize: 14}}>
                         {entry.skipped ? '—'
-                          : entry.mode === 'mode2' && !entry.lineSent ? '⏳'
+                          : entry.mode === 'gas_trigger' && !entry.lineSent ? '⏳'
                           : entry.lineSent ? '✓'
                           : entry.lineStatus ? '✗' : '—'}
                       </td>
@@ -427,7 +428,7 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
                         <NotifStatusBadge entry={entry}/>
                       </td>
                       <td style={{...tdStyle, color: '#9CA3AF', fontSize: 10}}>
-                        {entry.mode === 'mode1' ? 'Direct' : entry.mode === 'mode2' ? 'GAS' : '—'}
+                        {entry.mode === 'direct' ? 'Direct' : entry.mode === 'gas_trigger' ? 'GAS' : '—'}
                       </td>
                     </tr>
                   );
@@ -462,7 +463,7 @@ function NotificationTab({ lineHistory, setLineHistory, lineConfig, setLineConfi
       )}
 
       {/* Empty mode hint (LINE only) */}
-      {view === 'line' && (!lineConfig || !lineConfig.enabled || lineConfig.mode === 'off') && (
+      {view === 'line' && (!lineConfig || !lineConfig.enabled) && (
         <div style={{
           marginTop: 20, padding: '14px 18px', borderRadius: 10,
           background: '#FFFBEB', border: '1px solid #FDE68A',

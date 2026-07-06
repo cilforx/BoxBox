@@ -221,7 +221,7 @@ namespace BoxBox
         }
 
         // ── Auto-update ────────────────────────────────────────────────────────
-        private static readonly HttpClient _http = new();
+        private static readonly HttpClient _http = new() { Timeout = System.Threading.Timeout.InfiniteTimeSpan };
 
         public async Task<string> CheckForUpdate(string versionUrl, string currentVersion)
         {
@@ -858,8 +858,18 @@ namespace BoxBox
                 System.Text.RegularExpressions.RegexOptions.IgnoreCase |
                 System.Text.RegularExpressions.RegexOptions.Compiled);
 
-        private static bool IsSafeSql(string sql) =>
-            !string.IsNullOrWhiteSpace(sql) && !_unsafeSql.IsMatch(sql);
+        private static bool IsSafeSql(string sql)
+        {
+            if (string.IsNullOrWhiteSpace(sql)) return false;
+            var t = sql.TrimStart();
+            if (!t.StartsWith("SELECT", StringComparison.OrdinalIgnoreCase)) return false;
+            if (sql.Contains(';')) return false;
+            if (System.Text.RegularExpressions.Regex.IsMatch(sql, @"\bINTO\b",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
+            if (System.Text.RegularExpressions.Regex.IsMatch(sql, @"\b(xp_|sp_)\w+",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase)) return false;
+            return !_unsafeSql.IsMatch(sql);
+        }
 
         private static string DbError(string msg) =>
             JsonConvert.SerializeObject(new {

@@ -193,7 +193,8 @@ function App() {
     }, 3000);
   }, []);
 
-  useEffect(() => { doPush(); }, [boxes, fills, exchanges, dispatches, returns, settings]);
+  useEffect(() => { doPush(); }, [boxes, fills, exchanges, dispatches, returns, settings,
+                                  categories, boxTypes, wards, staff, printCfg]);
 
   const handleTestSync = () => {
     if (!gasConfig.url || isSyncingRef.current) return;

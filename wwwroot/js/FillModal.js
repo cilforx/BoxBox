@@ -171,7 +171,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
 
   const handlePrefillSourceChange = (src) => {
     setPrefillSource(src);
-    setDrugs(_computePrefill(src, box.boxId, box.typeId, boxes, fills, type?.drugs));
+    setDrugs(_computePrefill(src, box.boxId, box.typeId, boxes, fills, type?.drugs?.filter(d => !d.deletedAt)));
   };
 
   const saveAll = () => {
