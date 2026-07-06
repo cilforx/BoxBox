@@ -104,18 +104,20 @@ namespace BoxBox.Services
             }
 
             // ส่ง 1 Flex Message รวมทุกรายการ — ประหยัด quota (1 push/target แทน N push)
+            bool pushOk = false;
             if (toSend.Count > 0 && req.Mode == "mode1" && !string.IsNullOrWhiteSpace(req.ChannelToken))
             {
                 var msg = BuildFlexMessage(toSend);
-                var (ok, err) = await _line.PushMessageAsync(req.ChannelToken, req.TargetId, msg);
+                var (sent, err) = await _line.PushMessageAsync(req.ChannelToken, req.TargetId, msg);
+                pushOk = sent;
                 foreach (var r in results.Where(r => !r.Skipped))
                 {
-                    r.LineSent   = ok;
-                    r.LineStatus = ok ? "ok" : err;
+                    r.LineSent   = sent;
+                    r.LineStatus = sent ? "ok" : err;
                 }
             }
 
-            if (toSend.Count > 0)
+            if (toSend.Count > 0 && pushOk)
             {
                 sentToday.UnionWith(toSend.Select(i => i.DrugKey));
                 SaveSentToday(today, sentToday);

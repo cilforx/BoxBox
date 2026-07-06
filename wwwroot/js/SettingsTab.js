@@ -1501,8 +1501,8 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += '  } catch(_ex) { return err(\'_writeAll: \' + (_ex.message||String(_ex))); }\n}\n';
   }
 
-  // QR Confirmation + _daysLeft (sync-always)
-  if (syncEnabled) {
+  // _readDB + _daysLeft needed by both QR confirm (sync) and GAS daily trigger (line)
+  if (syncEnabled || lineEnabled) {
     sc += "\nfunction _readDB() {\n";
     sc += "  var sheet = getSheet(); if (sheet.getLastRow() === 0) return {};\n";
     sc += "  var rows = sheet.getDataRange().getValues();\n";
@@ -1520,6 +1520,10 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
 
     sc += "\nfunction _daysLeft(dateStr) {\n";
     sc += "  try { var exp = new Date(dateStr); var now = new Date(); now.setHours(0,0,0,0); exp.setHours(0,0,0,0); return Math.floor((exp - now) / 86400000); } catch(e) { return null; }\n}\n";
+  }
+
+  // QR Confirmation (sync-only)
+  if (syncEnabled) {
 
     sc += "\nfunction _handleConfirmReady(boxId, filledAt, ua, fillId) {\n";
     sc += "  if (!boxId) return HtmlService.createHtmlOutput('<!DOCTYPE html><html lang=\"th\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Sarabun,sans-serif;background:#FEF2F2;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}.e{text-align:center;color:#991B1B}.e .i{font-size:52px;margin-bottom:12px}.e h2{font-size:18px;font-weight:700}</style></head><body><div class=\"e\"><div class=\"i\">&#x274C;</div><h2>ไม่พบรหัสกล่อง</h2></div></body></html>').setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);\n";
@@ -1672,12 +1676,8 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "  const keys = sheet.getDataRange().getValues().slice(1).filter(r => r[1] === date && r[3] === 'true').map(r => String(r[0]));\n";
     sc += "  return ok({ date, keys });\n}\n";
 
-    // _daysLeft is already emitted in the syncEnabled block above
-
     sc += "\nfunction _getExpiryFromDB() {\n";
-    sc += "  const sheet = getSheet(); if (sheet.getLastRow() < 1) return [];\n";
-    sc += "  const db = {};\n";
-    sc += "  sheet.getDataRange().getValues().forEach(([key, val]) => { if (key) try { db[key] = JSON.parse(val); } catch { db[key] = val; } });\n";
+    sc += "  const db = _readDB();\n";
     sc += "  const settings = db['wds_settings'] || {}; const boxes = db['wds_boxes'] || []; const fills = db['wds_fills'] || []; const wards = db['wds_wards'] || [];\n";
     sc += "  const alertRed = settings.alertRed || _CONFIG.ALERT_RED_DAYS || 30;\n";
     sc += "  const alertYellow = settings.alertYellow || _CONFIG.ALERT_YELLOW_DAYS || 90;\n";

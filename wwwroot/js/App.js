@@ -339,7 +339,7 @@ function App() {
           var b = await window.chrome.webview.hostObjects.bridge;
           var histEntries = [];
           for (var ti = 0; ti < targets.length; ti++) {
-            var req = { items: items, channelToken: cfg.channelToken, targetId: targets[ti].id, force: !!force };
+            var req = { items: items, mode: 'mode1', channelToken: cfg.channelToken, targetId: targets[ti].id, force: !!force };
             var resultJson = await b.ProcessNotificationsAsync(JSON.stringify(req));
             var result = JSON.parse(resultJson);
             if (result.ok && result.data) {
