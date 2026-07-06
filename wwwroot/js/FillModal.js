@@ -178,8 +178,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
     const fillId = uid();
     const now = new Date().toISOString();
     const hns = patientHNs.split(/[,\s]+/).map(s=>s.trim()).filter(Boolean);
-    const _expDays = getBoxExpDays(type, settings);
-    const _boxExpDate = new Date(new Date(now).getTime() + _expDays * 864e5).toISOString().slice(0,10);
+    const _boxExpDate = getBoxExpDate(now, drugs, type, settings);
     setFills(p=>[...p,{fillId,boxId:box.boxId,drugs,filledBy,checkedBy:'',filledAt:now,
       boxExpDate: _boxExpDate,
       patientHNs: hns.length ? hns : undefined}]);
@@ -209,9 +208,8 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
     : [{name:d.name,qty:d.qty,expiry:d.expiry,lotNo:d.lotNo||''}]);
 
   const handlePrintSticker = async () => {
-    const expDays    = getBoxExpDays(type, settings);
     const fillDate   = new Date();
-    const boxExpDate = new Date(fillDate.getTime() + expDays*864e5);
+    const boxExpDate = getBoxExpDate(fillDate.toISOString(), drugs, type, settings);
     const sw = settings?.stickerW || 5;
     const sh = settings?.stickerH || 3;
     if (!hasCanvasPrintTemplate(printCfg?.sticker) && printCfg?.silentEnabled && printCfg?.stickerPrinter) {
@@ -232,9 +230,8 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
   };
 
   const handlePrintCoverSheet = async () => {
-    const expDays    = getBoxExpDays(type, settings);
     const fillDate   = new Date();
-    const boxExpDate = new Date(fillDate.getTime() + expDays*864e5);
+    const boxExpDate = getBoxExpDate(fillDate.toISOString(), drugs, type, settings);
     let _gasUrl = '';
     try { _gasUrl = JSON.parse(localStorage.getItem('wds_gasConfig')||'{}').url||''; } catch {}
     const coverData = {
@@ -260,7 +257,7 @@ function FillModal({box, onClose, boxes, setBoxes, fills, setFills,
   const handlePrint = async () => {
     const expDays   = getBoxExpDays(type, settings);
     const fillDate  = new Date();
-    const boxExpDate= new Date(fillDate.getTime()+expDays*864e5);
+    const boxExpDate= getBoxExpDate(fillDate.toISOString(), drugs, type, settings);
     if (!hasCanvasPrintTemplate(printCfg?.drugList) && printCfg?.silentEnabled && printCfg?.drugListPrinter) {
       try {
         const labelData = {

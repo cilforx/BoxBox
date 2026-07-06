@@ -15,10 +15,7 @@ const OverviewSection = ({boxes, fills, boxTypes, settings, expiredRows,
   Object.values(latestFill).forEach(f => {
     const bx = boxes.find(b => b.boxId === f.boxId);
     const tp = boxTypes.find(t => t.id === (bx||{}).typeId);
-    const expDays = getBoxExpDays(tp, settings);
-    const expDate = f.filledAt
-      ? new Date(new Date(f.filledAt).getTime() + expDays * 864e5).toISOString().slice(0,10)
-      : '';
+    const expDate = getBoxExpDate(f.filledAt, f.drugs, tp, settings);
     const dl = daysLeft(expDate);
     if (dl !== null && dl >= 0 && dl <= (settings.alertRed||30)) expiringSoonCount++;
   });
@@ -139,11 +136,9 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
     const dates = (drugs||[]).filter(d=>d.expiry).map(d=>d.expiry).sort();
     return dates[0] || '';
   };
-  const calcBoxExp = (filledAt, type) => {
-    if (!filledAt) return '';
-    const expDays = getBoxExpDays(type, settings);
-    return new Date(new Date(filledAt).getTime() + expDays * 864e5).toISOString().slice(0, 10);
-  };
+  // วันหมดอายุกล่อง (มีผลจริง) = min(filledAt + อายุกล่อง, ยาหมดอายุเร็วสุด)
+  const calcBoxExp = (fill, type) =>
+    fill && fill.filledAt ? getBoxExpDate(fill.filledAt, fill.drugs, type, settings) : '';
 
   // ── enrich fills ─────────────────────────────────────────────────────────────
   const enriched = [...fills]
@@ -159,7 +154,7 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
         .filter(d => d.boxId === f.boxId && new Date(d.at) < new Date(f.filledAt))
         .sort((a, b) => new Date(b.at) - new Date(a.at))[0];
       const prevWard = wards.find(w => w.id === prevDispatch?.wardId);
-      const boxExp   = calcBoxExp(f.filledAt, type);
+      const boxExp   = calcBoxExp(f, type);
       const nearExp  = nearestExpiry(f.drugs);
       return {f, type, dispatch, ward, prevDispatch, prevWard, boxExp, nearExp};
     });
@@ -199,7 +194,7 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
     const box = boxes.find(b => b.boxId === f.boxId);
     const type = boxTypes.find(t => t.id === (box||{}).typeId);
     const ward = wards.find(w => w.id === (box||{}).wardId);
-    const boxExpDate = calcBoxExp(f.filledAt, type);
+    const boxExpDate = calcBoxExp(f, type);
     const dl = daysLeft(boxExpDate);
     return {f, type, ward, boxExpDate, dl};
   }).filter(r => r.dl !== null && r.dl > 0 && r.dl <= expiringDays
@@ -413,7 +408,7 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
       const bx=boxes.find(b=>b.boxId===f.boxId)||{};
       const tp=boxTypes.find(t=>t.id===bx.typeId)||{};
       const ne=nearestExpiry(f.drugs);
-      const be=calcBoxExp(f.filledAt,tp);
+      const be=calcBoxExp(f,tp);
       return [fmt(f.filledAt),f.boxId,tp.name||'',f.filledBy||'',f.checkedBy||'',ne,be];
     });
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([s1h,...s1]),'บรรจุยา');
@@ -434,7 +429,7 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
       const tp=boxTypes.find(t=>t.id===bx.typeId)||{};
       const wd=wards.find(w=>w.id===bx.wardId)||{};
       const lf=[...fills].filter(f=>f.boxId===bx.boxId).sort((a,b)=>b.filledAt>a.filledAt?1:-1)[0];
-      const be=lf?calcBoxExp(lf.filledAt,tp):'';
+      const be=lf?calcBoxExp(lf,tp):'';
       return [bx.boxId,tp.name||'',wd.name||'',bx.status||'',lf?fmt(lf.filledAt):'',be];
     });
     XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet([s3h,...s3]),'สถานะกล่อง');
@@ -1048,7 +1043,7 @@ function ReportTab({fills, boxes, exchanges, returns, dispatches, wards, boxType
                     </tr></thead>
                     <tbody>
                       {filteredPending.map(({d,type,fill,ward},i) => {
-                        const boxExp = fill ? calcBoxExp(fill.filledAt, type) : '';
+                        const boxExp = fill ? calcBoxExp(fill, type) : '';
                         const isExp  = boxExp && boxExp < today;
                         return (
                           <tr key={d.boxId+(d.fillId||'')+i} style={{background:i%2===0?'#fff':'#F9FAFB'}}>

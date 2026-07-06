@@ -1544,7 +1544,9 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "  });\n";
     sc += "  var expDays = (type.expireDays > 0 ? type.expireDays : null) || settings.boxExpireDays || 90;\n";
     sc += "  var _srcFilled = lastFill.filledAt || filledAt;\n";
-    sc += "  var boxExpDate = _srcFilled ? new Date(new Date(_srcFilled).getTime() + expDays * 86400000).toISOString().slice(0,10) : (lastFill.boxExpDate || '');\n";
+    sc += "  var _byBox = _srcFilled ? new Date(new Date(_srcFilled).getTime() + expDays * 86400000).toISOString().slice(0,10) : (lastFill.boxExpDate || '');\n";
+    sc += "  var _minDrug = ''; allDrugs.forEach(function(d){ if (d.expiry && (!_minDrug || d.expiry < _minDrug)) _minDrug = d.expiry; });\n";
+    sc += "  var boxExpDate = (_minDrug && (!_byBox || _minDrug < _byBox)) ? _minDrug : _byBox; // หมดอายุกล่อง = min(กล่อง, ยาเร็วสุด)\n";
     sc += "  var _fmtD = function(iso) { if (!iso) return '\\u2014'; var p = String(iso).slice(0,10).split('-'); if (p.length < 3) return iso; var y = parseInt(p[0]) + (settings.displayYear === 'ce' ? 0 : 543); return p[2]+'-'+p[1]+'-'+y; };\n";
     sc += "  var drugRows = '';\n";
     sc += "  allDrugs.forEach(function(d, i) {\n";

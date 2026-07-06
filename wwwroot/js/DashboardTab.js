@@ -217,10 +217,9 @@ function DashboardTab({boxes,setBoxes,fills,setFills,boxTypes,categories,wards,s
       const ds = fill.drugs.map(d=>daysLeft(d.expiry)).filter(v=>v!==null);
       if (ds.length) minDays = Math.min(...ds);
     }
-    const expDays    = getBoxExpDays(type, settings);
-    const fillDate   = fill?.filledAt ? new Date(fill.filledAt) : null;
-    const boxExpDate = fillDate ? new Date(fillDate.getTime() + expDays*864e5) : null;
-    const boxDaysLeft = boxExpDate ? Math.round((boxExpDate - new Date())/864e5) : null;
+    // หมดอายุกล่อง (มีผลจริง) = min(filledAt + อายุกล่อง, ยาหมดอายุเร็วสุด)
+    const boxExpIso   = fill?.filledAt ? getBoxExpDate(fill.filledAt, fill.drugs, type, settings) : '';
+    const boxDaysLeft = boxExpIso ? daysLeft(boxExpIso) : null;
     const worstLv = worstAlertLv(minDays, boxDaysLeft);
     const conf = confMap[b.boxId];
     const qrAt = conf && fill?.filledAt && new Date(conf.confirmedAt) > new Date(fill.filledAt) ? conf.confirmedAt : null;

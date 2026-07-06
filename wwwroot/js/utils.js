@@ -28,6 +28,19 @@ const alertLv = (d, s) => {
 const getBoxExpDays = (type, settings) =>
   (type?.expireDays > 0 ? type.expireDays : null) || settings?.boxExpireDays || 90;
 
+// วันหมดอายุกล่อง (มีผลจริง) = min(filledAt + อายุกล่อง, ยาที่หมดอายุเร็วสุดในกล่อง)
+// รองรับยา multi-lot (อ่าน d.lots[].expiry) — คืน 'YYYY-MM-DD' หรือ '' ถ้าไม่มีข้อมูลบรรจุ
+const getBoxExpDate = (filledAt, drugs, type, settings) => {
+  if (!filledAt) return '';
+  const expDays = getBoxExpDays(type, settings);
+  const byBox = new Date(new Date(filledAt).getTime() + expDays * 864e5).toISOString().slice(0, 10);
+  const drugDates = (drugs || [])
+    .flatMap(d => (d && d.lots && d.lots.length) ? d.lots.map(l => l.expiry) : [d && d.expiry])
+    .filter(Boolean);
+  const minDrug = drugDates.length ? drugDates.reduce((a, b) => (a < b ? a : b)) : '';
+  return (minDrug && minDrug < byBox) ? minDrug : byBox;
+};
+
 // format date → dd-mm-yyyy (หรือ dd-mm-yyyy HH:MM)
 // yearType: 'be' = พ.ศ. (+543), 'ce' = ค.ศ., falsy = default BE
 const fmtDate = (isoOrDate, yearType, withTime) => {

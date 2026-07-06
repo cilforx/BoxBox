@@ -26,10 +26,10 @@ function CatDot({color}) {
 
 // ─── BoxMeta ──────────────────────────────────────────────────────────────────
 function BoxMeta({box, settings, qrConfirmedAt}) {
-  const expDays    = getBoxExpDays(box.type, settings);
-  const fillDate   = box.fill?.filledAt ? new Date(box.fill.filledAt) : null;
-  const boxExpDate = fillDate ? new Date(fillDate.getTime() + expDays*864e5) : null;
-  const boxDaysLeft= boxExpDate ? Math.round((boxExpDate - new Date())/864e5) : null;
+  // หมดอายุกล่อง (มีผลจริง) = min(filledAt + อายุกล่อง, ยาหมดอายุเร็วสุด)
+  const boxExpDate = box.fill?.filledAt
+    ? getBoxExpDate(box.fill.filledAt, box.fill.drugs, box.type, settings) : '';
+  const boxDaysLeft= boxExpDate ? daysLeft(boxExpDate) : null;
   const expStr     = boxExpDate ? fmtDate(boxExpDate, settings?.displayYear) : null;
   const lvColor = boxDaysLeft===null ? null
     : boxDaysLeft<=0                           ? {bg:'#991B1B',tc:'#fff'}
@@ -188,9 +188,8 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     setMenu(false);
     const fill = box.fill;
     if (!fill) return;
-    const expDays = getBoxExpDays(box.type, settings);
     const fillDate = fill.filledAt ? new Date(fill.filledAt) : new Date();
-    const boxExpDate = new Date(fillDate.getTime() + expDays * 864e5);
+    const boxExpDate = getBoxExpDate(fill.filledAt || fillDate.toISOString(), fill.drugs, box.type, settings);
     let _gasUrl = '';
     try { _gasUrl = JSON.parse(localStorage.getItem('wds_gasConfig')||'{}').url||''; } catch {}
     const coverData = {
@@ -222,7 +221,7 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
     if (!fill) return;
     const expDays = getBoxExpDays(box.type, settings);
     const fillDate = fill.filledAt ? new Date(fill.filledAt) : new Date();
-    const boxExpDate = new Date(fillDate.getTime() + expDays * 864e5);
+    const boxExpDate = getBoxExpDate(fill.filledAt || fillDate.toISOString(), fill.drugs, box.type, settings);
     const labelData = {
       boxId: box.boxId,
       boxType: box.type?.name || '',
@@ -248,9 +247,8 @@ function BoxCard({box, settings, wards, boxes, setBoxes, setExchanges, setDispat
   const handleSilentPrintSticker = async () => {
     setMenu(false);
     const fill = box.fill;
-    const expDays = getBoxExpDays(box.type, settings);
     const fillDate = fill?.filledAt ? new Date(fill.filledAt) : new Date();
-    const boxExpDate = new Date(fillDate.getTime() + expDays * 864e5);
+    const boxExpDate = getBoxExpDate(fill?.filledAt || fillDate.toISOString(), fill?.drugs, box.type, settings);
     const sd = {
       boxId: box.boxId,
       boxType: box.type?.name || '',
