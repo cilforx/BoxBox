@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<style>
+  @page { size: A4 portrait; margin: 0; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 210mm; height: 297mm; }
+  body {
+    font-family: 'Leelawadee UI', 'Tahoma', sans-serif;
+    color: #111827;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 16mm 18mm 14mm;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+  }
+  .brand {
+    width: 100%;
+    background: linear-gradient(135deg, #4F46E5 0%, #3730A3 100%);
+    color: #fff; border-radius: 8mm;
+    padding: 8mm 10mm;
+    display: flex; align-items: center; gap: 6mm;
+  }
+  .brand .icon {
+    width: 16mm; height: 16mm; border-radius: 4mm;
+    background: rgba(255,255,255,.18);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10mm; flex: none;
+  }
+  .brand h1 { font-size: 9.5mm; font-weight: 800; line-height: 1.1; }
+  .brand p  { font-size: 4.6mm; opacity: .9; margin-top: 1mm; font-weight: 400; }
+  .cta { margin-top: 15mm; text-align: center; }
+  .cta h2 {
+    font-size: 15.5mm; font-weight: 800; color: #4F46E5;
+    line-height: 1.18; letter-spacing: -.2mm;
+  }
+  .cta p { font-size: 5.6mm; color: #6B7280; margin-top: 4mm; font-weight: 500; }
+  .qrbox {
+    margin-top: 11mm;
+    padding: 7mm;
+    border: 1.2mm solid #E5E7EB; border-radius: 8mm;
+    background: #fff;
+  }
+  .qrbox img { width: 108mm; height: 108mm; display: block; }
+  .url {
+    margin-top: 9mm; text-align: center;
+  }
+  .url .u {
+    font-size: 8.2mm; font-weight: 800; color: #111827;
+    font-family: 'Segoe UI', 'Leelawadee UI', sans-serif;
+    letter-spacing: .1mm;
+  }
+  .url .u b { color: #4F46E5; }
+  .note {
+    margin-top: auto;
+    width: 100%;
+    background: #EEF2FF; border-radius: 6mm;
+    padding: 6mm 8mm; text-align: center;
+    font-size: 4.6mm; color: #3730A3; font-weight: 500; line-height: 1.55;
+  }
+</style>
+</head>
+<body>
+  <div class="brand">
+    <div class="icon">🧰</div>
+    <div>
+      <h1>BoxBox</h1>
+      <p>ระบบจัดการกล่องยาฉุกเฉิน — ฉบับทดลองใช้บนเว็บ</p>
+    </div>
+  </div>
+
+  <div class="cta">
+    <h2>ลองใช้งาน<br>ข้อมูลทดสอบ</h2>
+    <p>สแกน QR ด้วยกล้องมือถือหรือ iPad</p>
+  </div>
+
+  <div class="qrbox"><img src="qr_boxbox_demo.png" alt="QR Code"></div>
+
+  <div class="url">
+    <div class="u"><b>cilforx.github.io</b>/BoxBox</div>
+  </div>
+
+  <div class="note">
+    ข้อมูลภายในระบบเป็น <b>ข้อมูลทดสอบ</b> ไม่ใช่ข้อมูลจริงของหน่วยงาน<br>
+    ใช้ได้ทั้งบนมือถือ แท็บเล็ต และคอมพิวเตอร์ — ไม่ต้องติดตั้งโปรแกรม
+  </div>
+</body>
+</html>
