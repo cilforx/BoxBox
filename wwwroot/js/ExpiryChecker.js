@@ -7,6 +7,7 @@ function getExpirySnapshot() {
     var boxes        = JSON.parse(localStorage.getItem('wds_boxes')    || '[]');
     var fills        = JSON.parse(localStorage.getItem('wds_fills')    || '[]');
     var wards        = JSON.parse(localStorage.getItem('wds_wards')    || '[]');
+    var boxTypes     = JSON.parse(localStorage.getItem('wds_boxTypes') || '[]');
 
     var alertRed    = settings.alertRed    || 7;
     var alertYellow = settings.alertYellow || 14;
@@ -25,6 +26,34 @@ function getExpirySnapshot() {
         if (!fill || !fill.drugs) return;
         var ward     = wards.find(function(w) { return w.id === box.wardId; });
         var wardName = ward ? ward.name : '';
+        var type     = boxTypes.find(function(t) { return t.id === box.typeId; });
+
+        // อายุกล่อง: บรรจุ + expireDays — แจ้งเตือนเมื่อใกล้ครบกำหนด (แยกจากอายุยารายตัว)
+        var expDays  = getBoxExpDays(type, settings);
+        var byBox    = fill.filledAt
+          ? new Date(new Date(fill.filledAt).getTime() + expDays * 864e5).toISOString().slice(0, 10)
+          : '';
+        var minDrug  = '';
+        fill.drugs.forEach(function(drug) {
+          drugExpiries(drug).forEach(function(e) {
+            if (e && (!minDrug || e < minDrug)) minDrug = e;
+          });
+        });
+        var boxRemain = byBox ? daysLeft(byBox) : null;
+        if (boxRemain !== null && boxRemain <= alertYellow
+            && (!minDrug || byBox < minDrug)) {
+          items.push({
+            drugKey:    box.boxId + '_BOXEXPIRY',
+            drugName:   '📦 ตัวกล่อง (ครบกำหนด ' + expDays + ' วัน)',
+            lotNo:      '',
+            expireDate: byBox,
+            boxId:      box.boxId,
+            wardName:   wardName,
+            quantity:   0,
+            remainDays: boxRemain,
+            alertLevel: boxRemain <= 0 ? 'expired' : boxRemain <= alertRed ? 'red' : 'yellow',
+          });
+        }
 
         fill.drugs.forEach(function(drug) {
           var expiries = drugExpiries(drug);
@@ -85,6 +114,20 @@ async function gasGetLineRecipients(url, token) {
     console.warn('[ExpiryChecker] gasGetLineRecipients error:', e);
     return [];
   }
+}
+
+// Toggle รับ/ไม่รับข้อความแจ้งเตือนของ recipient ในชีต BoxBoxLineRecipients
+async function gasSetRecipientEnabled(url, token, userId, groupId, enabled) {
+  var res = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify({
+      action: 'setRecipientEnabled', token: token || '',
+      userId: userId || '', groupId: groupId || '', enabled: !!enabled,
+    }),
+  });
+  var json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'GAS setRecipientEnabled error');
+  return true;
 }
 
 // Log notification to GAS BoxBoxNotifications sheet

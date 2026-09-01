@@ -1,10 +1,72 @@
 # BoxBox — Dev Log
 
-> อัปเดตล่าสุด: 2026-07-06 (v1.3.7)
+> อัปเดตล่าสุด: 2026-09-01 (v1.3.10)
 
 ---
 
 ## ✅ ทำแล้ว (Completed)
+
+### Session 2026-09-01 (2) — v1.3.10: hardening แจ้งเตือน LINE + ย้ายตึกจากหน้ายืนยัน QR
+
+#### 🐛 Flex message หลุดเมื่อชื่อตึกว่าง (พบจากทดสอบจริง — HTTP 400)
+- กล่อง BOXEXPIRY ที่ไม่มีตึก → `wardName = ''` → LINE ปัดข้อความทั้งข้อตก ("must be non-empty text")
+- **Fix**: fallback `wardName || '—'` ทั้ง generator (`SettingsTab.js`) และ Mode 1 ฝั่ง C# (`NotificationService.cs`)
+
+#### 🐛 ลบเป้าหมายแถวสุดท้ายไม่ได้
+- migration `targetId` เดิมสร้างแถวกลับมาทันทีหลังลบ → ตอนลบจนหลุดทั้งลิสต์ให้เคลียร์ `targetId` ด้วย
+
+#### ✨ checkbox "รับ" คุมทั้ง 2 โหมด + ดึงรายชื่ออัตโนมัติ
+- `__boxboxRunNotification` (App.js): ตอนส่ง Mode 1 ดึงรายชื่อจากชีต BoxBoxLineRecipients ที่ติ๊กรับมารวมกับ targets ในเครื่อง (dedup, offline ใช้ targets เดิม)
+- SettingsTab: เปิดหน้าตั้งค่า LINE → ดึงรายชื่อจาก GAS อัตโนมัติ
+
+#### ✨ GAS generator เลิก hardcode LINE_TARGET_ID
+- สคริปต์ที่ generate ฝัง `LINE_TARGET_ID: ''` — ผู้รับมาจากชีตที่ติ๊ก "รับ" เท่านั้น (กรอกเพิ่มเป็น fallback ได้)
+
+#### ✨ หน้ายืนยัน QR ย้ายตึกได้
+- generator เพิ่ม dropdown ตึก + ปุ่มบันทึกท้ายหน้า confirmReady → action `moveBox` (doGet) → `_moveBox()` แก้ `wardId` ใน row `wds_boxes__{boxId}` ของชีต BoxBoxDB + หน้าผลลัพธ์ — เครื่องหลัก sync ได้ค่าใหม่อัตโนมัติ (pull getAll)
+
+- ⚠️ ผู้ใช้ต้อง regenerate GAS script + Deploy (New version) เพื่อใช้ moveBox และผู้รับจากชีต
+- ✅ ตรวจ: Babel parse ผ่าน; รัน `buildGasScript()` จริง generate sync+LINE และ sync-only แล้ว parse ผ่าน
+
+### Session 2026-09-01 — v1.3.9: แจ้งเตือนอายุกล่องครบกำหนด + GAS ดึงผู้รับจากชีต + ติ๊กรับข้อความ
+
+#### 🐛 แจ้งเตือน LINE ไม่ส่งเรื่อง "อายุกล่องครบกำหนด"
+**`wwwroot/js/ExpiryChecker.js`** — `getExpirySnapshot()`:
+- **Root cause**: snapshot ดูเฉพาะวันหมดอายุตัวยาใน `fill.drugs` — กล่องที่ครบกำหนด (บรรจุ+90/180 วัน) แต่ยาแต่ละตัวยังไม่ใกล้หมด = `no_items` ไม่แจ้งเตือน ทั้งที่ dashboard เห็นอายุกล่อง
+- **Fix**: เพิ่มรายการ `BOXEXPIRY` (drugKey `boxId_BOXEXPIRY`) คำนวณ `filledAt + expireDays` (ตามประเภทกล่อง รพ.สต.=180) ผ่าน `getBoxExpDays` — แจ้งเมื่อเหลือ ≤ alertYellow; ถ้ายาตัวใดหมดอายุเร็วกว่า/เท่ากันจะข้าม (ไม่ duplicate กับรายการยา)
+- แสดงในข้อความ LINE เป็น "📦 ตัวกล่อง (ครบกำหนด X วัน)"
+
+#### ✨ GAS trigger ดึงผู้รับจาก BoxBoxLineRecipients + checkbox "รับ" ในแอป
+**`wwwroot/js/SettingsTab.js`** — `buildGasScript()`:
+- `checkAndNotifyExpiry` ส่งให้ = `LINE_TARGET_ID` ใน _CONFIG (fallback ถ้ากรอก) **รวมกับ** รายชื่อในชีต `BoxBoxLineRecipients` ที่ติ๊กรับ (dedup ด้วย Set)
+- ชีตเพิ่มคอลัมน์ 8 `receiveEnabled` — ว่าง=รับ (แถวเดิมไม่ต้อง migrate), 'false'=ไม่รับ; webhook เพิ่มแถวใหม่ default 'true'
+- เพิ่ม action `setRecipientEnabled` (doPost) + `_getEnabledRecipients()` + `_getLineRecipients` คืน `receiveEnabled`
+- `_getExpiryFromDB` ใน generator เพิ่มโค้ด BOXEXPIRY ให้ตรง logic กับฝั่งแอป
+
+**`wwwroot/js/ExpiryChecker.js`**:
+- เพิ่ม `gasSetRecipientEnabled(url, token, userId, groupId, enabled)` — toggle สถานะรับข้อความบนชีต
+
+**`wwwroot/js/SettingsTab.js`** — UI:
+- รายชื่อที่ดึงจาก Bot มี checkbox "รับ" ต่อแถว — ติ๊กแล้วบันทึกทันทีผ่าน GAS
+
+- ⚠️ ผู้ใช้ต้อง regenerate GAS script ในหน้าตั้งค่า แล้ววางทับใน Apps Script editor → Deploy (New version) เพื่อใช้ BOXEXPIRY + รายชื่อจากชีต
+- ✅ ตรวจ: Babel parse SettingsTab/ExpiryChecker ผ่าน; รัน `buildGasScript()` จริง generate sync+LINE และ sync-only แล้ว parse ผ่าน
+
+### Session 2026-07-21 — v1.3.8: แก้ LINE แจ้งเตือนกล่องที่ลบไปแล้ว + multi-lot ใน GAS trigger
+
+#### 🐛 กล่อง Test ที่ลบแล้ว ยังโดน GAS trigger แจ้งเตือน LINE
+**`wwwroot/js/SettingsTab.js`** — `buildGasScript()` → `_getExpiryFromDB()`:
+- **Root cause**: การลบกล่องในแอปเป็น tombstone (`deletedAt`) — status เดิม (`dispatched`/`ready`) ยังอยู่ และ sync ขึ้น cloud DB ตามปกติ ฝั่งแอป (`ExpiryChecker.getExpirySnapshot`) กรอง `!b.deletedAt` แล้ว แต่ `_getExpiryFromDB` ใน GAS script กรองเฉพาะ status → trigger `checkAndNotifyExpiry` ยังเห็นกล่องที่ลบแล้วและส่ง LINE ต่อ
+- **Fix**: เพิ่ม `!b.deletedAt &&` ใน filter ของ `_getExpiryFromDB` (generator ใน SettingsTab.js)
+- ⚠️ **ต้อง regenerate GAS script + วางทับใน Apps Script editor** (trigger รันจากโค้ด head ล่าสุด — save ก็มีผลทันที; redeploy web app ด้วยเพื่อความสอดคล้อง)
+- 📝 Workaround ทันทีโดยไม่ต้องรออัปเดตแอป: แก้ในหน้า Apps Script editor ตรง `boxes.filter(b => b.status === 'dispatched' || ...)` เป็น `boxes.filter(b => !b.deletedAt && (b.status === 'dispatched' || b.status === 'ready'))` แล้ว Save
+
+#### 🐛 GAS trigger ไม่รองรับ multi-lot (พบระหว่างตรวจ)
+**`wwwroot/js/SettingsTab.js`** — `buildGasScript()` → `_getExpiryFromDB()`:
+- เดิมอ่านแค่ `drug.expiry` → ยาที่บรรจุหลาย lot (`drug.lots[].expiry`) แจ้งเตือนไม่ครบจาก GAS trigger (ฝั่งแอป H4 แก้ไปแล้ว แต่ฝั่ง GAS ตกหล่น)
+- **Fix**: mirror logic `drugExpiries()` + การเลือก lotNo ต่อ expiry จาก `ExpiryChecker.getExpirySnapshot` ลงใน generated script — แจ้งเตือนครบทุก lot, drugKey ต่อ lot ไม่ชนกัน
+
+---
 
 ### Session 2026-07-06 — Bugfix batch (BUGFIX_ASSIGNMENT.md)
 
@@ -649,6 +711,26 @@ INV_MD_C    → WORKING_CODE (FK), LOT_NO, EXPIRED_DATE (YYYYMMDD CE), QTY_ON_HA
 ## 📋 Version History
 <!-- อัปเดต section นี้ทุกครั้งที่ deploy เวอร์ชันใหม่ แล้วรัน: python update_changelog.py -->
 <!-- format: ### v{version} — {วันที่ ไทย} -->
+
+### v1.3.10 — 1 ก.ย. 2569
+- แก้ Flex message LINE หลุดเมื่อกล่องไม่มีชื่อตึก (HTTP 400: text ว่าง) — ทั้ง Mode 1 และ GAS
+- แก้ลบเป้าหมายแจ้งเตือนแถวสุดท้ายไม่ได้ (targetId เดิมดึงกลับมา)
+- checkbox "รับ" คุมทั้ง Mode 1 (แอปส่งตรง) และ Mode 2 (GAS trigger) จากที่เดียว
+- เปิดหน้าตั้งค่า LINE ดึงรายชื่อจาก GAS อัตโนมัติ ไม่ต้องกดปุ่ม
+- GAS script เลิก hardcode LINE_TARGET_ID — ผู้รับมาจากชีต BoxBoxLineRecipients ที่ติ๊ก "รับ"
+- หน้ายืนยัน QR เพิ่ม "ย้ายตึก" — dropdown เลือกตึก บันทึกลง DB แล้วซิงค์กลับเครื่องหลักเอง
+- ⚠️ ต้อง regenerate GAS script + Deploy (New version)
+
+### v1.3.9 — 1 ก.ย. 2569
+- แจ้งเตือน LINE ครอบคลุม "อายุกล่องครบกำหนด" แล้ว (เดิมดูแค่อายุยารายตัว — กล่องใกล้ครบกำหนด 90/180 วันไม่ถูกแจ้ง)
+- GAS trigger ดึงผู้รับจากชีต BoxBoxLineRecipients (รวมกับ LINE_TARGET_ID ใน _CONFIG)
+- เพิ่ม checkbox "รับ" ต่อรายชื่อผู้รับในหน้าตั้งค่า — คุมว่าใครจะรับแจ้งเตือนตามเวลา (Mode 2)
+- ⚠️ ต้อง regenerate GAS script ในหน้าตั้งค่า + Deploy (New version) ใน Apps Script
+
+### v1.3.8 — 21 ก.ค. 2569
+- แก้ LINE ยังแจ้งเตือนกล่องที่ลบไปแล้ว — GAS trigger กรองกล่อง tombstone (deletedAt) แล้ว
+- แก้ GAS trigger แจ้งเตือนยา multi-lot ไม่ครบ — อ่าน lots ทุก lot เหมือนฝั่งแอป
+- ⚠️ ผู้ใช้ที่เปิดแจ้งเตือน LINE ต้อง regenerate GAS script ในหน้าตั้งค่า แล้ววางทับใน Apps Script editor + Save
 
 ### v1.3.7 — 6 ก.ค. 2569
 - แก้ LINE Mode 1 ไม่ส่งข้อความ — ขาด mode:'mode1' ใน request + บันทึก sent-today เฉพาะตอนส่งสำเร็จ

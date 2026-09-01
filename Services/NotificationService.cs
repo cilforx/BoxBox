@@ -162,7 +162,7 @@ namespace BoxBox.Services
                         }},
                         new { type = "box", layout = "vertical", flex = 0, contents = new object[]
                         {
-                            new { type = "text", text = i.WardName, size = "xxs", color = "#888888", align = "end" },
+                            new { type = "text", text = string.IsNullOrWhiteSpace(i.WardName) ? "—" : i.WardName, size = "xxs", color = "#888888", align = "end" },
                             new { type = "text", text = tail, size = "xxs", color, align = "end", weight = "bold" },
                         }},
                     }

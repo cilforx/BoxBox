@@ -1,5 +1,12 @@
 # BoxBox — Ward Emergency Drug Box Management
 
+## Mandatory Workboard First
+
+Before starting **any task in this repository**, read
+`presentation/WORKBOARD.md` in full. Treat it as the shared source of truth
+between the owner, Claude, ChatGPT/Codex, and other agents. After completing
+work, update its status and add a dated entry at the top of the Handoff Log.
+
 ## Project Overview
 **BoxBox** is a standalone C# WinForms + WebView2 desktop application for managing
 ward emergency drug boxes (CPR, PPH, ACS, EMS etc.) at a regional hospital in Thailand.

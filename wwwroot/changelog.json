@@ -1,5 +1,37 @@
 [
   {
+    "version": "1.3.10",
+    "date": "1 ก.ย. 2569",
+    "changes": [
+      "แก้ Flex message LINE หลุดเมื่อกล่องไม่มีชื่อตึก (HTTP 400: text ว่าง) — ทั้ง Mode 1 และ GAS",
+      "แก้ลบเป้าหมายแจ้งเตือนแถวสุดท้ายไม่ได้ (targetId เดิมดึงกลับมา)",
+      "checkbox \"รับ\" คุมทั้ง Mode 1 (แอปส่งตรง) และ Mode 2 (GAS trigger) จากที่เดียว",
+      "เปิดหน้าตั้งค่า LINE ดึงรายชื่อจาก GAS อัตโนมัติ ไม่ต้องกดปุ่ม",
+      "GAS script เลิก hardcode LINE_TARGET_ID — ผู้รับมาจากชีต BoxBoxLineRecipients ที่ติ๊ก \"รับ\"",
+      "หน้ายืนยัน QR เพิ่ม \"ย้ายตึก\" — dropdown เลือกตึก บันทึกลง DB แล้วซิงค์กลับเครื่องหลักเอง",
+      "⚠️ ต้อง regenerate GAS script + Deploy (New version)"
+    ]
+  },
+  {
+    "version": "1.3.9",
+    "date": "1 ก.ย. 2569",
+    "changes": [
+      "แจ้งเตือน LINE ครอบคลุม \"อายุกล่องครบกำหนด\" แล้ว (เดิมดูแค่อายุยารายตัว — กล่องใกล้ครบกำหนด 90/180 วันไม่ถูกแจ้ง)",
+      "GAS trigger ดึงผู้รับจากชีต BoxBoxLineRecipients (รวมกับ LINE_TARGET_ID ใน _CONFIG)",
+      "เพิ่ม checkbox \"รับ\" ต่อรายชื่อผู้รับในหน้าตั้งค่า — คุมว่าใครจะรับแจ้งเตือนตามเวลา (Mode 2)",
+      "⚠️ ต้อง regenerate GAS script ในหน้าตั้งค่า + Deploy (New version) ใน Apps Script"
+    ]
+  },
+  {
+    "version": "1.3.8",
+    "date": "21 ก.ค. 2569",
+    "changes": [
+      "แก้ LINE ยังแจ้งเตือนกล่องที่ลบไปแล้ว — GAS trigger กรองกล่อง tombstone (deletedAt) แล้ว",
+      "แก้ GAS trigger แจ้งเตือนยา multi-lot ไม่ครบ — อ่าน lots ทุก lot เหมือนฝั่งแอป",
+      "⚠️ ผู้ใช้ที่เปิดแจ้งเตือน LINE ต้อง regenerate GAS script ในหน้าตั้งค่า แล้ววางทับใน Apps Script editor + Save"
+    ]
+  },
+  {
     "version": "1.3.7",
     "date": "6 ก.ค. 2569",
     "changes": [

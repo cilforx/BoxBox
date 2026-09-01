@@ -1398,11 +1398,6 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
   var red    = s.alertRed    || 7;
   var yellow = s.alertYellow || 14;
   var token = lineEnabled ? ((lineConfig && lineConfig.channelToken) || 'PASTE_YOUR_CHANNEL_ACCESS_TOKEN') : '';
-  var targetArr = lineEnabled
-    ? (((lineConfig && lineConfig.targets && lineConfig.targets.length)
-        ? lineConfig.targets.map(function(t){ return t.id; }).join(',')
-        : ((lineConfig && lineConfig.targetId) || '')) || 'PASTE_YOUR_USER_OR_GROUP_ID')
-    : '';
   var features = [];
   if (syncEnabled) features.push('Data Sync');
   if (lineEnabled) features.push('LINE Notification');
@@ -1424,7 +1419,8 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
   if (lineEnabled) {
     sc += '\nconst _CONFIG = {\n';
     sc += "  LINE_TOKEN:        '" + token + "',\n";
-    sc += "  LINE_TARGET_ID:    '" + targetArr + "',\n";
+    sc += "  // ไม่ต้องกรอก — ผู้รับมาจากชีต BoxBoxLineRecipients ที่ติ๊ก 'รับ' ในแอป (จะกรอกเพิ่มเป็น fallback ก็ได้ เช่น 'Uxxxx,Cxxxx')\n";
+    sc += "  LINE_TARGET_ID:    '',\n";
     sc += '  ALERT_RED_DAYS:    ' + red + ',\n';
     sc += '  ALERT_YELLOW_DAYS: ' + yellow + ',\n';
     sc += '};\n';
@@ -1440,6 +1436,7 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "  if (action === 'confirmReady') {\n";
     sc += "    var ua = ''; try { ua = e.getHeaders()['User-Agent'] || ''; } catch(ex) {}\n";
     sc += "    return _handleConfirmReady(e.parameter.boxId || '', e.parameter.filledAt || '', ua, e.parameter.fillId || '');\n  }\n";
+    sc += "  if (action === 'moveBox') return _moveBox(e.parameter.boxId || '', e.parameter.wardId || '');\n";
   }
   if (lineEnabled) {
     sc += "  if (action === 'checkNotifySent') return _checkNotifySent(e.parameter.drugKey || '', e.parameter.date || '');\n";
@@ -1467,6 +1464,7 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "  if (body.action === 'pushExpiry')       return _pushExpiry(body.data || []);\n";
     sc += "  if (body.action === 'markNotified')     return _markNotified(body.data || {});\n";
     sc += "  if (body.action === 'markNotifiedKeys') return _markNotifiedKeys(body);\n";
+    sc += "  if (body.action === 'setRecipientEnabled') return _setRecipientEnabled(body);\n";
   }
   sc += "  return err('Unknown action');\n";
   sc += "  } catch(_ex) { return err('doPost error: ' + (_ex.message||String(_ex))); }\n}\n";
@@ -1606,6 +1604,15 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "    ? '<div class=\"empty\">&#9888;&#65039; ไม่พบข้อมูลการบรรจุใน BoxBox<br><small>กรุณาเปิดแอป BoxBox แล้วซิงค์ข้อมูล (Settings &#8594; ออนไลน์)</small></div>'\n";
     sc += "    : '<div class=\"empty\">ไม่มีรายการยาในบันทึกการบรรจุนี้</div>';\n";
     sc += "  var exCls = boxExpDate && _daysLeft(boxExpDate)<=0?'tx-danger':boxExpDate && _daysLeft(boxExpDate)<=alertRed?'tx-warn':'';\n";
+    sc += "  var wardOpts = wards.map(function(w){ return '<option value=\"' + w.id + '\"' + (w.id === box.wardId ? ' selected' : '') + '>' + w.name + '</option>'; }).join('');\n";
+    sc += "  var moveHtml = box.boxId\n";
+    sc += "    ? '<form method=\"get\" action=\"\"><input type=\"hidden\" name=\"action\" value=\"moveBox\"><input type=\"hidden\" name=\"boxId\" value=\"' + boxId + '\">' +\n";
+    sc += "      '<div class=\"gl\" style=\"margin-bottom:1.5vw\">&#128205; ย้ายตึก (ถ้ากล่องไปอยู่ตึกอื่น — ข้อมูลจะซิงค์กลับเครื่องหลักเมื่อ sync)</div>' +\n";
+    sc += "      '<div style=\"display:flex;gap:2vw\">' +\n";
+    sc += "      '<select name=\"wardId\" style=\"flex:1;font-family:Sarabun,sans-serif;font-size:4vw;padding:2.5vw;border:1px solid #D1D5DB;border-radius:2vw;background:#fff;color:#1F2937\">' + wardOpts + '</select>' +\n";
+    sc += "      '<button type=\"submit\" style=\"padding:2.5vw 5vw;font-size:4vw;font-weight:700;border:none;border-radius:2vw;background:#059669;color:#fff\">บันทึก</button>' +\n";
+    sc += "      '</div></form>'\n";
+    sc += "    : '';\n";
     sc += "  var html = '<!DOCTYPE html><html lang=\"th\"><head><meta charset=\"utf-8\">' +\n";
     sc += "    '<meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">' +\n";
     sc += "    '<title>BoxBox &#x2014; &#x2713; ยืนยัน</title>' +\n";
@@ -1627,7 +1634,37 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "    '</div></div>' +\n";
     sc += "    '<div class=\"st\">รายการยา (' + allDrugs.length + ' รายการ)</div>' +\n";
     sc += "    (allDrugs.length===0 ? noData : '<div class=\"dl\">' + drugRows + '</div>') +\n";
+    sc += "    '</div>' +\n";
+    sc += "    '<div class=\"card\">' + moveHtml + '</div>' +\n";
     sc += "    '</div><div class=\"ft\">BoxBox \\u2014 Ward Emergency Drug Box Management</div></body></html>';\n";
+    sc += "  return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);\n}\n";
+
+    sc += "\n// ย้ายตึกจากหน้ายืนยัน QR — อัปเดต wardId ใน BoxBoxDB เครื่องหลัก sync ดึงไปเอง\n";
+    sc += "function _moveBox(boxId, wardId) {\n";
+    sc += "  var moved = false; var wardName = '';\n";
+    sc += "  if (boxId && wardId) {\n";
+    sc += "    var sheet = getSheet(); var rowKey = 'wds_boxes__' + boxId;\n";
+    sc += "    var rows = sheet.getDataRange().getValues();\n";
+    sc += "    for (var i = 0; i < rows.length; i++) {\n";
+    sc += "      if (String(rows[i][0]) === rowKey) {\n";
+    sc += "        var box; try { box = JSON.parse(rows[i][1]); } catch(e) { box = null; }\n";
+    sc += "        if (box) { box.wardId = wardId; sheet.getRange(i + 1, 2, 1, 2).setValues([[JSON.stringify(box), new Date().toISOString()]]); moved = true; }\n";
+    sc += "        break;\n";
+    sc += "      }\n";
+    sc += "    }\n";
+    sc += "  }\n";
+    sc += "  if (moved) {\n";
+    sc += "    var db = _readDB();\n";
+    sc += "    var w = (db['wds_wards']||[]).find(function(x){ return x.id === wardId; });\n";
+    sc += "    wardName = w ? (w.name||'') : wardId;\n";
+    sc += "  }\n";
+    sc += "  var html = '<!DOCTYPE html><html lang=\"th\"><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\">' +\n";
+    sc += "    '<link href=\"https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap\" rel=\"stylesheet\">' +\n";
+    sc += "    '<style>*{box-sizing:border-box;margin:0;padding:0}body{font-family:Sarabun,sans-serif;background:#F0FDF4;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:6vw;text-align:center}body *{max-width:90vw}.i{font-size:16vw;line-height:1;margin-bottom:3vw}h2{font-size:6vw;color:#065F46;margin-bottom:2vw}p{font-size:4vw;color:#4B5563;line-height:1.7}code{font-size:4.5vw;font-weight:700;color:#1F2937}</style></head><body>' +\n";
+    sc += "    (moved\n";
+    sc += "      ? '<div class=\"i\">&#9989;</div><h2>ย้ายตึกเรียบร้อย</h2><p><code>' + boxId + '</code><br>ไปที่ <b>' + wardName + '</b><br><small>เครื่องหลักจะเห็นการเปลี่ยนแปลงเมื่อ sync ครั้งถัดไป</small></p>'\n";
+    sc += "      : '<div class=\"i\">\\u26a0\\ufe0f</div><h2>ย้ายตึกไม่สำเร็จ</h2><p>ไม่พบกล่อง <code>' + boxId + '</code> ในฐานข้อมูล<br>หรือยังไม่ได้เลือกตึก</p>') +\n";
+    sc += "    '</body></html>';\n";
     sc += "  return HtmlService.createHtmlOutput(html).setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);\n}\n";
 
     sc += "\nfunction _getConfirmations() {\n";
@@ -1680,31 +1717,50 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
 
     sc += "\nfunction _getExpiryFromDB() {\n";
     sc += "  const db = _readDB();\n";
-    sc += "  const settings = db['wds_settings'] || {}; const boxes = db['wds_boxes'] || []; const fills = db['wds_fills'] || []; const wards = db['wds_wards'] || [];\n";
+    sc += "  const settings = db['wds_settings'] || {}; const boxes = db['wds_boxes'] || []; const fills = db['wds_fills'] || []; const wards = db['wds_wards'] || []; const boxTypes = db['wds_boxTypes'] || [];\n";
     sc += "  const alertRed = settings.alertRed || _CONFIG.ALERT_RED_DAYS || 30;\n";
     sc += "  const alertYellow = settings.alertYellow || _CONFIG.ALERT_YELLOW_DAYS || 90;\n";
     sc += "  const lastFillByBox = {};\n";
     sc += "  fills.forEach(f => { if (!lastFillByBox[f.boxId] || f.filledAt > lastFillByBox[f.boxId].filledAt) lastFillByBox[f.boxId] = f; });\n";
     sc += "  const wardMap = {}; wards.forEach(w => { wardMap[w.id] = w.name; });\n";
     sc += "  const items = [];\n";
-    sc += "  boxes.filter(b => b.status === 'dispatched' || b.status === 'ready').forEach(box => {\n";
+    sc += "  boxes.filter(b => !b.deletedAt && (b.status === 'dispatched' || b.status === 'ready')).forEach(box => {\n";
     sc += "    const fill = lastFillByBox[box.boxId]; if (!fill || !fill.drugs) return;\n";
     sc += "    const wardName = wardMap[box.wardId] || '';\n";
+    sc += "    const type = boxTypes.find(t => t.id === box.typeId) || {};\n";
+    sc += "    // อายุกล่อง: บรรจุ + expireDays — แจ้งเตือนเมื่อใกล้ครบกำหนด (แยกจากอายุยารายตัว)\n";
+    sc += "    const expDays = (type.expireDays > 0 ? type.expireDays : null) || settings.boxExpireDays || 90;\n";
+    sc += "    const byBox = fill.filledAt ? new Date(new Date(fill.filledAt).getTime() + expDays * 86400000).toISOString().slice(0, 10) : '';\n";
+    sc += "    let minDrug = '';\n";
     sc += "    fill.drugs.forEach(drug => {\n";
-    sc += "      if (!drug.expiry) return;\n";
-    sc += "      const remain = _daysLeft(drug.expiry); if (remain === null || remain > alertYellow) return;\n";
-    sc += "      const level = remain <= 0 ? 'expired' : remain <= alertRed ? 'red' : 'yellow';\n";
-    sc += "      const lotNo = drug.lotNo || '';\n";
-    sc += "      items.push({ drugKey: box.boxId + '_' + drug.name + '_' + lotNo, drugName: drug.name, lotNo,\n";
-    sc += "        expireDate: drug.expiry, boxId: box.boxId, wardName, quantity: drug.qty || 0, remainDays: remain, alertLevel: level });\n";
-    sc += "    });\n  });\n";
+    sc += "      const expiries = (drug.lots && drug.lots.length) ? drug.lots.map(l => l.expiry).filter(Boolean) : (drug.expiry ? [drug.expiry] : []);\n";
+    sc += "      expiries.forEach(e => { if (e && (!minDrug || e < minDrug)) minDrug = e; });\n";
+    sc += "    });\n";
+    sc += "    const boxRemain = byBox ? _daysLeft(byBox) : null;\n";
+    sc += "    if (boxRemain !== null && boxRemain <= alertYellow && (!minDrug || byBox < minDrug)) {\n";
+    sc += "      items.push({ drugKey: box.boxId + '_BOXEXPIRY', drugName: '📦 ตัวกล่อง (ครบกำหนด ' + expDays + ' วัน)', lotNo: '',\n";
+    sc += "        expireDate: byBox, boxId: box.boxId, wardName, quantity: 0, remainDays: boxRemain,\n";
+    sc += "        alertLevel: boxRemain <= 0 ? 'expired' : boxRemain <= alertRed ? 'red' : 'yellow' });\n";
+    sc += "    }\n";
+    sc += "    fill.drugs.forEach(drug => {\n";
+    sc += "      const expiries = (drug.lots && drug.lots.length) ? drug.lots.map(l => l.expiry).filter(Boolean) : (drug.expiry ? [drug.expiry] : []);\n";
+    sc += "      expiries.forEach(expiry => {\n";
+    sc += "        const remain = _daysLeft(expiry); if (remain === null || remain > alertYellow) return;\n";
+    sc += "        const level = remain <= 0 ? 'expired' : remain <= alertRed ? 'red' : 'yellow';\n";
+    sc += "        const lotNo = (drug.lots && drug.lots.length) ? ((drug.lots.find(l => l.expiry === expiry) || {}).lotNo || drug.lotNo || '') : (drug.lotNo || '');\n";
+    sc += "        items.push({ drugKey: box.boxId + '_' + drug.name + '_' + lotNo, drugName: drug.name, lotNo,\n";
+    sc += "          expireDate: expiry, boxId: box.boxId, wardName, quantity: drug.qty || 0, remainDays: remain, alertLevel: level });\n";
+    sc += "      });\n    });\n  });\n";
     sc += "  return items.sort((a, b) => a.remainDays - b.remainDays);\n}\n";
 
     sc += "\n// Daily trigger: GAS Editor → Triggers → + Add Trigger → checkAndNotifyExpiry → Time-driven → Day timer → 8am–9am\n";
     sc += "function checkAndNotifyExpiry() {\n";
     sc += "  const lineToken = _CONFIG.LINE_TOKEN;\n";
-    sc += "  const lineTargets = (_CONFIG.LINE_TARGET_ID || '').split(',').map(s => s.trim()).filter(Boolean);\n";
-    sc += "  if (!lineToken || !lineTargets.length) { console.log('[BoxBox] LINE_TOKEN or LINE_TARGET_ID not set'); return; }\n";
+    sc += "  // เป้าหมาย = LINE_TARGET_ID ใน _CONFIG (ถ้ากรอก) + รายชื่อจาก BoxBoxLineRecipients ที่ติ๊ก 'รับข้อความ'\n";
+    sc += "  const manualTargets = (_CONFIG.LINE_TARGET_ID || '').split(',').map(s => s.trim()).filter(Boolean);\n";
+    sc += "  const recipTargets = _getEnabledRecipients();\n";
+    sc += "  const lineTargets = Array.from(new Set(manualTargets.concat(recipTargets)));\n";
+    sc += "  if (!lineToken || !lineTargets.length) { console.log('[BoxBox] LINE_TOKEN not set / no enabled recipients'); return; }\n";
     sc += "  const allItems = _getExpiryFromDB();\n";
     sc += "  if (!allItems.length) { console.log('[BoxBox] No expiry data in BoxBoxDB'); return; }\n";
     sc += "  const today = Utilities.formatDate(new Date(), 'Asia/Bangkok', 'yyyy-MM-dd');\n";
@@ -1737,7 +1793,7 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "        { type: 'text', text: 'Lot: ' + item.lotNo + ' | ' + item.boxId, size: 'xxs', color: '#888888' },\n";
     sc += "      ]},\n";
     sc += "      { type: 'box', layout: 'vertical', flex: 0, contents: [\n";
-    sc += "        { type: 'text', text: item.wardName, size: 'xxs', color: '#888888', align: 'end' },\n";
+    sc += "        { type: 'text', text: item.wardName || '—', size: 'xxs', color: '#888888', align: 'end' },\n";
     sc += "        { type: 'text', text: tail, size: 'xxs', color: color, align: 'end', weight: 'bold' },\n";
     sc += "      ]},\n    ]};\n  }\n";
     sc += "  const bodyContents = [];\n";
@@ -1774,7 +1830,8 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
 
     sc += "\nfunction _handleLineWebhook(body) {\n";
     sc += "  const sheet = _getOrCreateSheet('BoxBoxLineRecipients');\n";
-    sc += "  if (sheet.getLastRow() === 0) sheet.appendRow(['timestamp','type','userId','groupId','roomId','displayName','pictureUrl']);\n";
+    sc += "  if (sheet.getLastRow() === 0) sheet.appendRow(['timestamp','type','userId','groupId','roomId','displayName','pictureUrl','receiveEnabled']);\n";
+    sc += "  else if (sheet.getLastColumn() < 8) sheet.getRange(1, 8).setValue('receiveEnabled');\n";
     sc += "  const existing = {};\n";
     sc += "  if (sheet.getLastRow() > 1) sheet.getDataRange().getValues().slice(1).forEach((r, i) => { existing[String(r[2]) + '|' + String(r[3])] = i + 2; });\n";
     sc += "  body.events.forEach(event => {\n";
@@ -1785,9 +1842,29 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "    const displayName = srcType === 'group' ? 'กลุ่ม' : srcType === 'room' ? 'ห้อง' : 'ผู้ใช้';\n";
     sc += "    const now = new Date().toISOString(); const dedupKey = userId + '|' + groupId;\n";
     sc += "    if (existing[dedupKey]) sheet.getRange(existing[dedupKey], 1, 1, 7).setValues([[now, srcType, userId, groupId, roomId, displayName, '']]);\n";
-    sc += "    else { sheet.appendRow([now, srcType, userId, groupId, roomId, displayName, '']); existing[dedupKey] = sheet.getLastRow(); }\n";
+    sc += "    else { sheet.appendRow([now, srcType, userId, groupId, roomId, displayName, '', 'true']); existing[dedupKey] = sheet.getLastRow(); }\n";
     sc += "  });\n";
     sc += "  return ContentService.createTextOutput('').setMimeType(ContentService.MimeType.TEXT);\n}\n";
+    sc += "\n// id ของรายชื่อที่ติ๊ก 'รับข้อความ' (คอลัมน์ receiveEnabled — ว่าง = รับ, 'false' = ไม่รับ)\n";
+    sc += "function _getEnabledRecipients() {\n";
+    sc += "  const sheet = _getOrCreateSheet('BoxBoxLineRecipients');\n";
+    sc += "  if (sheet.getLastRow() <= 1) return [];\n";
+    sc += "  return sheet.getDataRange().getValues().slice(1)\n";
+    sc += "    .filter(r => (r[2] || r[3]) && String(r[7]) !== 'false')\n";
+    sc += "    .map(r => String(r[3] || r[4] || r[2]));\n";
+    sc += "}\n";
+    sc += "\nfunction _setRecipientEnabled(body) {\n";
+    sc += "  const sheet = _getOrCreateSheet('BoxBoxLineRecipients');\n";
+    sc += "  if (sheet.getLastRow() > 1) {\n";
+    sc += "    const rows = sheet.getDataRange().getValues();\n";
+    sc += "    for (let i = 1; i < rows.length; i++) {\n";
+    sc += "      if (String(rows[i][2]) === String(body.userId || '') && String(rows[i][3]) === String(body.groupId || '')) {\n";
+    sc += "        sheet.getRange(i + 1, 8).setValue(body.enabled ? 'true' : 'false');\n";
+    sc += "        break;\n";
+    sc += "      }\n";
+    sc += "    }\n";
+    sc += "  }\n";
+    sc += "  return ok({ saved: true });\n}\n";
 
     sc += "\nfunction _getLineRecipients() {\n";
     sc += "  const sheet = _getOrCreateSheet('BoxBoxLineRecipients');\n";
@@ -1802,7 +1879,7 @@ function buildGasScript(lineEnabled, syncEnabled, lineConfig, settings) {
     sc += "      const profile = _getLineProfile(token, userId);\n";
     sc += "      if (profile.displayName) { displayName = profile.displayName; pictureUrl = profile.pictureUrl || ''; sheet.getRange(i + 2, 6, 1, 2).setValues([[displayName, pictureUrl]]); }\n";
     sc += "    }\n";
-    sc += "    return { timestamp: String(r[0]||''), type: String(r[1]||'user'), userId, groupId: String(r[3]||''), roomId: String(r[4]||''), displayName, pictureUrl };\n";
+    sc += "    return { timestamp: String(r[0]||''), type: String(r[1]||'user'), userId, groupId: String(r[3]||''), roomId: String(r[4]||''), displayName, pictureUrl, receiveEnabled: String(r[7]) !== 'false' };\n";
     sc += "  }).filter(r => r.userId || r.groupId);\n";
     sc += "  return ok(data);\n}\n";
 
@@ -2070,7 +2147,11 @@ function LineNotifySection({ lineConfig, setLineConfig, gasConfig, settings }) {
     if (!id || targets.some(function(t) { return t.id === id; })) return;
     setTargets(targets.concat([{ id: id, type: item.type || 'user', displayName: item.displayName || '' }]));
   }
-  function removeTarget(id) { setTargets(targets.filter(function(t) { return t.id !== id; })); }
+  function removeTarget(id) {
+    var next = targets.filter(function(t) { return t.id !== id; });
+    if (next.length) set('targets', next);
+    else setLineConfig(function(p) { return { ...p, targets: [], targetId: '' }; }); // ลบแถวสุดท้ายต้องเคลียร์ targetId เดิมด้วย ไม่งั้น migration สร้างกลับมา
+  }
 
   const [testStatus,    setTestStatus]    = useState('idle');
   const [runNowBusy,    setRunNowBusy]    = useState(false);
@@ -2110,6 +2191,11 @@ function LineNotifySection({ lineConfig, setLineConfig, gasConfig, settings }) {
     } catch(e) { setRecipError('ดึงข้อมูลไม่ได้: ' + e.message); }
     setRecipLoading(false);
   }
+
+  // เปิดหน้าตั้งค่า → ดึงรายชื่อจาก GAS อัตโนมัติ (ไม่ต้องกดปุ่ม)
+  useEffect(function() {
+    if (gasConfig && gasConfig.url) handleFetchRecipients();
+  }, []);
 
   async function handleTest() {
     if (!cfg.channelToken || !targets.length) {
@@ -2487,6 +2573,19 @@ function LineNotifySection({ lineConfig, setLineConfig, gasConfig, settings }) {
                     ? <span style={{ fontSize: 11, color: '#16A34A', fontWeight: 700, whiteSpace: 'nowrap' }}>✓ เพิ่มแล้ว</span>
                     : <button onClick={function() { addTarget(item); }} style={{ padding: '3px 10px', fontSize: 11, borderRadius: 5, border: '1px solid #4F46E5', background: '#fff', color: '#4F46E5', cursor: 'pointer', fontWeight: 600, whiteSpace: 'nowrap' }}>+ เพิ่ม</button>
                   }
+                  <label title="ส่งแจ้งเตือนตามเวลาให้รายนี้ผ่าน GAS (Mode 2)" style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer', whiteSpace: 'nowrap', fontSize: 10, color: '#475569' }}>
+                    <input type="checkbox" checked={item.receiveEnabled !== false}
+                      onChange={function(e) {
+                        var checked = e.target.checked;
+                        setRecipients(function(list) {
+                          return list.map(function(x, xi) { return xi === i ? Object.assign({}, x, { receiveEnabled: checked }) : x; });
+                        });
+                        gasSetRecipientEnabled(gasConfig.url, gasConfig.token || '', item.userId, item.groupId, checked)
+                          .catch(function(err) { setRecipError('บันทึกสถานะรับข้อความไม่สำเร็จ: ' + err.message); });
+                      }}
+                      style={{ width: 13, height: 13, accentColor: '#059669', cursor: 'pointer' }}/>
+                    รับ
+                  </label>
                 </div>
               );
             })}

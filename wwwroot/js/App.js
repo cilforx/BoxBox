@@ -308,6 +308,18 @@ function App() {
         ? cfg.targets
         : (cfg.targetId ? [{ id: cfg.targetId, type: 'user', displayName: '' }] : []);
 
+      // รวมรายชื่อจากชีต BoxBoxLineRecipients ที่ติ๊ก "รับ" → ใช้ร่วมทั้ง Mode 1 (แอปส่งตรง) และ Mode 2 (GAS trigger)
+      if (gasCfg && gasCfg.url) {
+        try {
+          var recips = await gasGetLineRecipients(gasCfg.url, gasCfg.token || '');
+          recips.filter(function(r) { return r.receiveEnabled !== false; }).forEach(function(r) {
+            var id = r.groupId || r.roomId || r.userId;
+            if (id && !targets.some(function(t) { return t.id === id; }))
+              targets.push({ id: id, type: r.type || 'user', displayName: r.displayName || '' });
+          });
+        } catch(e) { /* offline — ใช้ targets ในเครื่อง */ }
+      }
+
       // ไม่มีช่องทางส่งได้จริง
       var hasDirectPath = !!(m1 && cfg.channelToken && targets.length);
       var hasGasPath    = !!(m2 && gasCfg && gasCfg.url);
